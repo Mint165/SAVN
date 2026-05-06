@@ -385,6 +385,16 @@ async def form_post(
     else:
         db.add(models.HealthRecord(user_id=user.id, date=record_date_obj, **fields))
     
+    # Update Golden Hour start time if risk is high and not already set
+    if risk_summary["final_score"] >= 75:
+        if not user.golden_hour_start:
+            user.golden_hour_start = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    elif risk_summary["final_score"] < 35:
+        # Optional: Clear if risk becomes low? 
+        # User said "luôn tiếp tục chạy", but logically if the risk is gone, the "emergency" might be over.
+        # For now, I'll keep it unless the user asks to clear it.
+        pass
+
     db.commit()
     return RedirectResponse(url="/", status_code=302)
 

@@ -1,21 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Báo Cáo — HeartBits{% endblock %}
 {% block body %}
-<nav class="top-nav">
-  <a href="/" class="nav-brand"><i class="fa-solid fa-heart-pulse heartbeat-icon"></i> HeartBits</a>
-  <ul class="nav-menu">
-    <li><a href="/"><i class="fa-solid fa-chart-line"></i> <span data-i18n="nav_dash">Tổng quan</span></a></li>
-    <li><a href="/form"><i class="fa-solid fa-notes-medical"></i> <span data-i18n="nav_entry">Nhập dữ liệu</span></a></li>
-    <li><a href="/exercise"><i class="fa-solid fa-dumbbell"></i> <span data-i18n="nav_ex">Tập luyện</span></a></li>
-    <li class="active"><a href="/report"><i class="fa-solid fa-file-medical"></i> <span data-i18n="nav_report">Báo cáo</span></a></li>
-    <li><a href="/schedule"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav_schedule">Lịch</span></a></li>
-    <li><a href="/profile"><i class="fa-solid fa-id-card"></i> <span data-i18n="nav_profile">Hồ sơ</span></a></li>
-  </ul>
-  <div class="nav-right">
-    <div class="icon-btn" onclick="openSettings()"><i class="fa-solid fa-gear"></i></div>
-    <a href="/profile" class="user-avatar">{{ user.username[0].upper() }}</a>
-  </div>
-</nav>
 <div class="main-content">
   <div class="page-header"><h1 data-i18n="page_report">Báo Cáo Sức Khỏe</h1></div>
 

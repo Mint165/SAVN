@@ -18,9 +18,48 @@
 {% block head %}{% endblock %}
 </head>
 <body>
-{% block body %}{% endblock %}
 
 {% if user is defined and user %}
+<!-- GLOBAL TOP NAV (PC & Mobile) -->
+<nav class="top-nav">
+  <a href="/" class="nav-brand"><i class="fa-solid fa-heart-pulse heartbeat-icon"></i> HeartBits</a>
+  
+  <ul class="nav-menu desktop-only">
+    <li><a href="/"><i class="fa-solid fa-chart-line"></i> <span data-i18n="nav_dash">Tổng quan</span></a></li>
+    <li><a href="/form"><i class="fa-solid fa-notes-medical"></i> <span data-i18n="nav_entry">Nhập dữ liệu</span></a></li>
+    <li><a href="/exercise"><i class="fa-solid fa-dumbbell"></i> <span data-i18n="nav_ex">Tập luyện</span></a></li>
+    <li><a href="/report"><i class="fa-solid fa-file-medical"></i> <span data-i18n="nav_report">Báo cáo</span></a></li>
+    <li><a href="/schedule"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav_schedule">Lịch</span></a></li>
+    <li><a href="/profile"><i class="fa-solid fa-id-card"></i> <span data-i18n="nav_profile">Hồ sơ</span></a></li>
+  </ul>
+
+  <div class="nav-right">
+    <div class="icon-btn" onclick="openSettings()" title="Cài đặt"><i class="fa-solid fa-gear"></i></div>
+    <a href="/profile" class="user-avatar" title="{{ user.username }}">{{ user.username[0].upper() }}</a>
+    <!-- Mobile Hamburger Menu Icon -->
+    <div class="icon-btn mobile-only" onclick="toggleMobileMenu()"><i class="fa-solid fa-bars"></i></div>
+  </div>
+</nav>
+
+<!-- Mobile Overlay Menu -->
+<div id="mobileMenuOverlay" class="mobile-menu-overlay hidden">
+  <div class="mobile-menu-content">
+    <div class="mobile-menu-header">
+      <div class="mobile-brand"><i class="fa-solid fa-heart-pulse heartbeat-icon"></i> HeartBits</div>
+      <button class="btn-close" onclick="toggleMobileMenu()"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <ul class="mobile-menu-list">
+      <li><a href="/"><i class="fa-solid fa-chart-line"></i> <span data-i18n="nav_dash">Tổng quan</span></a></li>
+      <li><a href="/form"><i class="fa-solid fa-notes-medical"></i> <span data-i18n="nav_entry">Nhập dữ liệu</span></a></li>
+      <li><a href="/exercise"><i class="fa-solid fa-dumbbell"></i> <span data-i18n="nav_ex">Tập luyện</span></a></li>
+      <li><a href="/report"><i class="fa-solid fa-file-medical"></i> <span data-i18n="nav_report">Báo cáo</span></a></li>
+      <li><a href="/schedule"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav_schedule">Lịch</span></a></li>
+      <li><a href="/profile"><i class="fa-solid fa-id-card"></i> <span data-i18n="nav_profile">Hồ sơ</span></a></li>
+      <li><a href="/logout" style="color: var(--danger); border-top: 1px solid var(--border); margin-top: 1rem; padding-top: 1rem;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất</a></li>
+    </ul>
+  </div>
+</div>
+
 <!-- Settings Modal -->
 <div id="settingsModal" class="modal-overlay hidden">
   <div class="modal-content card">
@@ -46,48 +85,17 @@
   </div>
 </div>
 
-<!-- MOBILE NAVIGATION -->
-<div class="mobile-top-bar">
-  <div class="mobile-brand"><i class="fa-solid fa-heart-pulse heartbeat-icon"></i> HeartBits</div>
-  <button class="hamburger-btn" onclick="toggleMobileMenu()"><i class="fa-solid fa-bars"></i></button>
-</div>
-
-<div id="mobileMenuOverlay" class="mobile-menu-overlay hidden">
-  <div class="mobile-menu-content">
-    <div class="mobile-menu-header">
-      <div class="mobile-brand"><i class="fa-solid fa-heart-pulse heartbeat-icon"></i> HeartBits</div>
-      <button class="btn-close" onclick="toggleMobileMenu()"><i class="fa-solid fa-times"></i></button>
-    </div>
-    <ul class="mobile-menu-list">
-      <li><a href="/"><i class="fa-solid fa-house"></i> <span data-i18n="nav_dash">Trang chủ</span></a></li>
-      <li><a href="/exercise"><i class="fa-solid fa-trophy"></i> <span data-i18n="nav_ex">Nhiệm vụ</span></a></li>
-      <li><a href="/report"><i class="fa-solid fa-clock-rotate-left"></i> <span data-i18n="nav_report">Lịch sử NV</span></a></li>
-      <li><a href="/form"><i class="fa-solid fa-bag-shopping"></i> <span>Cửa hàng</span></a></li>
-      <li><a href="/profile"><i class="fa-regular fa-comment-dots"></i> <span>Ami</span></a></li>
-      <li><a href="/schedule"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav_schedule">Nhật ký</span></a></li>
-      <li><a href="#" onclick="openSettings(); toggleMobileMenu();"><i class="fa-solid fa-gear"></i> <span data-i18n="settings_title">Cài đặt</span></a></li>
-      <li><a href="/logout" style="color: var(--danger);"><i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất</a></li>
-    </ul>
-  </div>
-</div>
-
-<div class="mobile-bottom-nav">
-  <a href="/" class="mb-nav-item"><i class="fa-solid fa-music"></i><span>Trang chủ</span></a>
-  <a href="/exercise" class="mb-nav-item"><i class="fa-solid fa-trophy"></i><span>Nhiệm vụ</span></a>
-  <a href="/report" class="mb-nav-item"><i class="fa-solid fa-clock-rotate-left"></i><span>Lịch sử NV</span></a>
-  <a href="/form" class="mb-nav-item"><i class="fa-solid fa-bag-shopping"></i><span>Cửa hàng</span></a>
-  <a href="/profile" class="mb-nav-item"><i class="fa-regular fa-comment-dots"></i><span>Ami</span></a>
-</div>
-
 <!-- GOLDEN HOUR (global, persistent across all pages) -->
 <div id="golden-hour-overlay" class="hidden"></div>
 <div id="golden-hour-timer" class="hidden">
   <svg class="progress-ring" width="120" height="120"><circle class="progress-ring__circle" stroke="#EF4444" stroke-width="8" fill="transparent" r="52" cx="60" cy="60"/></svg>
-  <div class="timer-text"><div class="timer-title" data-i18n="golden_hour">GIỜ VÀNG</div><div id="timer-countdown">03:00:00</div></div>
+  <div class="timer-text"><div class="timer-title" data-i18n="golden_hour">GIỜ VÀNG</div><div id="timer-countdown">04:30:00</div></div>
 </div>
 {% endif %}
 
-<!-- GLOBAL I18N + Theme JS (available on ALL pages including login) -->
+{% block body %}{% endblock %}
+
+<!-- GLOBAL I18N + Theme JS -->
 <script>
 var I18N={
   vi:{
@@ -186,7 +194,6 @@ function changeLang(l){
   document.querySelectorAll('[data-i18n-opt]').forEach(function(el){var k=el.getAttribute('data-i18n-opt');if(d[k])el.textContent=d[k];});
   document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){var k=el.getAttribute('data-i18n-placeholder');if(d[k])el.placeholder=d[k];});
   document.querySelectorAll('[data-i18n-html]').forEach(function(el){var k=el.getAttribute('data-i18n-html');if(d[k])el.innerHTML=d[k];});
-  // Toggle bilingual content blocks
   document.querySelectorAll('[data-lang]').forEach(function(el){
     el.style.display=(el.getAttribute('data-lang')===l)?'':'none';
   });
@@ -210,15 +217,23 @@ function toggleMobileMenu(){
   if(menu) menu.classList.toggle('hidden');
 }
 
-
 // ─── GLOBAL GOLDEN HOUR INIT ─────────────────────────────────
 function initGoldenHour(){
-  var startStr=localStorage.getItem('goldenHourStart');
+  // Get start time from Backend User model if available
+  var backendStart = "{{ user.golden_hour_start or '' }}";
+  var startStr = backendStart || localStorage.getItem('goldenHourStart');
+  
   if(!startStr)return;
-  var startTime=parseInt(startStr,10);
-  var elapsed=Math.floor((Date.now()-startTime)/1000);
-  var total=3*3600;
-  if(elapsed>=total){localStorage.removeItem('goldenHourStart');return;}
+  
+  // Handle ISO strings or timestamps
+  var startTime = isNaN(startStr) ? new Date(startStr).getTime() : parseInt(startStr, 10);
+  var elapsed = Math.floor((Date.now() - startTime) / 1000);
+  var total = 4.5 * 3600; // 4.5 hours
+  
+  if(elapsed >= total){
+    localStorage.removeItem('goldenHourStart');
+    return;
+  }
 
   var overlay=document.getElementById('golden-hour-overlay');
   var timer=document.getElementById('golden-hour-timer');
@@ -240,8 +255,8 @@ function initGoldenHour(){
     timeLeft--;
   }
 
-  // If first visit (just triggered), show overlay briefly
-  if(!sessionStorage.getItem('goldenHourShown_' + startTime)){
+  // Show logic: Only show big overlay if triggered in last 10 seconds
+  if(elapsed < 10 && !sessionStorage.getItem('goldenHourShown_' + startTime)){
     sessionStorage.setItem('goldenHourShown_' + startTime, '1');
     overlay.classList.remove('hidden');
     timer.classList.remove('hidden');
@@ -251,9 +266,8 @@ function initGoldenHour(){
       overlay.style.opacity='0';
       timer.classList.add('minimized');
       setTimeout(function(){overlay.classList.add('hidden');},1000);
-    },4000);
+    }, 2000); // 2 SECONDS as requested
   } else {
-    // Resumed from another page — show minimized directly
     timer.classList.remove('hidden');
     timer.classList.add('minimized');
     tick();
@@ -275,7 +289,9 @@ function initGoldenHour(){
 
 document.addEventListener('DOMContentLoaded',function(){
   changeLang(localStorage.getItem('lang')||'vi');
+  {% if user is defined and user %}
   initGoldenHour();
+  {% endif %}
 });
 </script>
 </body>

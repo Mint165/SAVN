@@ -25,6 +25,9 @@ class User(Base):
     # Exercise streak
     exercise_streak = Column(Integer, default=0)
     last_exercise_date = Column(Date, nullable=True)
+    
+    # Golden Hour tracking
+    golden_hour_start = Column(String, nullable=True) # ISO Format string
 
     records = relationship("HealthRecord", back_populates="owner")
     schedules = relationship("Schedule", back_populates="owner")
@@ -49,6 +52,7 @@ class HealthRecord(Base):
     heart_disease = Column(Integer)
     avg_glucose_level = Column(Float)
     bmi = Column(Float)
+    hypertension = Column(Integer, default=0)
     
     # FAST Symptoms (0=Không, 1=Nhẹ, 2=Rõ, 3=Nặng)
     fast_f = Column(Integer, default=0)
