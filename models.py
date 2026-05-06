@@ -29,6 +29,9 @@ class User(Base):
     # Golden Hour tracking
     golden_hour_start = Column(String, nullable=True) # ISO Format string
 
+    # Emergency contact
+    emergency_phone = Column(String, nullable=True)
+
     records = relationship("HealthRecord", back_populates="owner")
     schedules = relationship("Schedule", back_populates="owner")
 

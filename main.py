@@ -220,6 +220,7 @@ async def profile_post(
     heart_disease: int = Form(0),
     hypertension_history: int = Form(0),
     bmi: float = Form(...),
+    emergency_phone: str = Form(""),
     db: Session = Depends(get_db)
 ):
     user = get_current_user(request, db)
@@ -234,6 +235,7 @@ async def profile_post(
     user.heart_disease = heart_disease
     user.hypertension_history = hypertension_history
     user.bmi = bmi
+    user.emergency_phone = emergency_phone.strip() or None
     db.commit()
     return RedirectResponse(url="/profile", status_code=302)
 

@@ -355,6 +355,34 @@ a{text-decoration:none;color:inherit}
 [data-theme=dark] #timer-countdown{color:#fff}
 .progress-ring__circle{transition:stroke-dashoffset 1s linear;transform:rotate(-90deg);transform-origin:50% 50%}
 
+/* SOS FLOATING BUTTON */
+.sos-floating-btn {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 9002;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.5rem;
+  background: var(--danger);
+  color: #FFFFFF !important;
+  font-weight: 800;
+  font-size: 0.95rem;
+  border-radius: 2rem;
+  text-decoration: none;
+  box-shadow: 0 4px 20px rgba(239,68,68,0.4);
+  animation: sosPulse 1.5s ease-in-out infinite;
+  transition: transform 0.2s;
+}
+.sos-floating-btn:hover { transform: scale(1.05); }
+.sos-floating-btn:active { transform: scale(0.95); }
+.sos-floating-btn i { font-size: 1.1rem; }
+@keyframes sosPulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(239,68,68,0.4); }
+  50% { box-shadow: 0 4px 30px rgba(239,68,68,0.7); }
+}
+
 /* CALENDAR CONTRAST FIX */
 .cal-day{color:var(--text)}
 .cal-day .day-num{color:var(--text);font-weight:700}

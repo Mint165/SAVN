@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HeartBits AI Vision Test</title>
+    <!-- MediaPipe Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    
+    <style>
+        :root {
+            --primary: #10B981;
+            --danger: #EF4444;
+            --bg: #0F172A;
+        }
+        body {
+            margin: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            position: relative;
+            width: 90vw;
+            max-width: 640px;
+            aspect-ratio: 4/3;
+            background: #1E293B;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        #input_video {
+            display: none;
+        }
+        #output_canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror mode */
+        }
+        .status-panel {
+            position: absolute;
+            bottom: 1.5rem;
+            left: 1.5rem;
+            right: 1.5rem;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            padding: 1rem;
+            border-radius: 1rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .meter-container {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        #symmetry_bar {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            transition: width 0.1s, background 0.3s;
+        }
+        .label-group {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        #alert_msg {
+            text-align: center;
+            font-weight: 800;
+            color: var(--primary);
+            margin-top: 0.5rem;
+            font-size: 1rem;
+        }
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(16, 185, 129, 0.1);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <video id="input_video"></video>
+        <canvas id="output_canvas"></canvas>
+        
+        <div id="loading" class="loading-overlay">
+            <div class="spinner"></div>
+            <p style="margin-top: 1rem;">Đang tải mô hình AI...</p>
+        </div>
+
+        <div class="status-panel">
+            <div class="label-group">
+                <span>Độ cân đối khuôn mặt</span>
+                <span id="score_text">0%</span>
+            </div>
+            <div class="meter-container">
+                <div id="symmetry_bar"></div>
+            </div>
+            <div id="alert_msg">ĐANG QUÉT...</div>
+        </div>
+    </div>
+
+    <div style="margin-top: 2rem; text-align: center; padding: 0 1rem;">
+        <h2 style="margin: 0 0 0.5rem 0;">HeartBits AI Vision Prototype</h2>
+        <p style="opacity: 0.6; font-size: 0.9rem;">Thử nghiệm nhận diện Face Drooping bằng Computer Vision</p>
+    </div>
+
+    <script>
+        const videoElement = document.getElementById('input_video');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const loadingOverlay = document.getElementById('loading');
+        const scoreText = document.getElementById('score_text');
+        const symmetryBar = document.getElementById('symmetry_bar');
+        const alertMsg = document.getElementById('alert_msg');
+
+        function onResults(results) {
+            loadingOverlay.style.display = 'none';
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+            
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                const landmarks = results.multiFaceLandmarks[0];
+                
+                // Vẽ lưới mặt
+                drawConnectors(canvasCtx, landmarks, FACEMESH_TESSELATION, {color: '#C0C0C070', lineWidth: 1});
+                
+                // Các điểm quan trọng:
+                // 61: Khóe miệng trái, 291: Khóe miệng phải
+                // 10: Trán, 152: Cằm
+                const leftMouth = landmarks[61];
+                const rightMouth = landmarks[291];
+
+                // Tính toán độ lệch dọc (Y) giữa 2 khóe miệng
+                const yDiff = Math.abs(leftMouth.y - rightMouth.y);
+                // Chuẩn hóa dựa trên chiều cao khuôn mặt (từ trán đến cằm)
+                const faceHeight = Math.abs(landmarks[10].y - landmarks[152].y);
+                
+                // Tính tỉ lệ phần trăm lệch (nhân 500 để làm rõ độ nhạy)
+                const asymmetryScore = (yDiff / faceHeight) * 500; 
+
+                // Cập nhật giao diện
+                const displayScore = Math.min(100, Math.round(asymmetryScore));
+                scoreText.innerText = displayScore + '%';
+                symmetryBar.style.width = displayScore + '%';
+
+                if (displayScore > 15) {
+                    symmetryBar.style.background = 'var(--danger)';
+                    alertMsg.innerText = '⚠️ CẢNH BÁO: PHÁT HIỆN ĐỘ LỆCH!';
+                    alertMsg.style.color = 'var(--danger)';
+                } else {
+                    symmetryBar.style.background = 'var(--primary)';
+                    alertMsg.innerText = 'KHUÔN MẶT CÂN ĐỐI';
+                    alertMsg.style.color = 'var(--primary)';
+                }
+
+                // Vẽ điểm khóe miệng để người dùng thấy
+                canvasCtx.fillStyle = displayScore > 15 ? '#EF4444' : '#10B981';
+                canvasCtx.beginPath();
+                canvasCtx.arc(leftMouth.x * canvasElement.width, leftMouth.y * canvasElement.height, 5, 0, 2 * Math.PI);
+                canvasCtx.arc(rightMouth.x * canvasElement.width, rightMouth.y * canvasElement.height, 5, 0, 2 * Math.PI);
+                canvasCtx.fill();
+            }
+            canvasCtx.restore();
+        }
+
+        const faceMesh = new FaceMesh({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+        }});
+
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        faceMesh.onResults(onResults);
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await faceMesh.send({image: videoElement});
+            },
+            width: 640,
+            height: 480
+        });
+        camera.start();
+
+        // Xử lý kích thước canvas
+        function resizeCanvas() {
+            canvasElement.width = canvasElement.clientWidth;
+            canvasElement.height = canvasElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+    </script>
+</body>
+</html>

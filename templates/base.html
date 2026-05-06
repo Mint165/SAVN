@@ -98,6 +98,11 @@
   <svg class="progress-ring" width="120" height="120"><circle class="progress-ring__circle" stroke="#EF4444" stroke-width="8" fill="transparent" r="52" cx="60" cy="60"/></svg>
   <div class="timer-text"><div class="timer-title" data-i18n="golden_hour">GIỜ VÀNG</div><div id="timer-countdown">04:30:00</div></div>
 </div>
+{% if user is defined and user and user.emergency_phone %}
+<a id="sos-btn" class="sos-floating-btn hidden" href="#" onclick="sendSOS(event)">
+  <i class="fa-solid fa-phone-volume"></i> <span data-i18n="sos_btn">GỬI SOS</span>
+</a>
+{% endif %}
 {% endif %}
 
 {% block body %}{% endblock %}
@@ -147,7 +152,9 @@ var I18N={
     login_user_ph:"Nhập tên tài khoản",login_pass_ph:"Nhập mật khẩu",reg_user_ph:"Chọn tên tài khoản",reg_pass_ph:"Tối thiểu 6 ký tự",
     reg_health_title:"Hồ Sơ Sức Khỏe",reg_bmi_title:"Chỉ Số BMI",reg_bmi_direct:"Nhập trực tiếp",reg_bmi_calc:"Tính từ chiều cao/cân nặng",reg_bmi_label:"Chỉ số BMI",reg_height:"Chiều cao (cm)",reg_weight:"Cân nặng (kg)",reg_bmi_auto:"BMI (tự động tính)",
     golden_hour:"GIỜ VÀNG",
-    delete_confirm:"Xóa lịch hẹn này?"
+    delete_confirm:"Xóa lịch hẹn này?",
+    emergency_title:"Liên Hệ Khẩn Cấp",emergency_phone:"Số điện thoại người thân",emergency_phone_ph:"VD: 0912345678",emergency_hint:"Số này sẽ nhận tin nhắn SOS kèm vị trí khi có cảnh báo khẩn cấp.",
+    sos_btn:"GỬI SOS",sos_msg:"CẤP CỨU! Tôi có dấu hiệu đột quỵ. Vị trí của tôi:",sos_msg_no_gps:"CẤP CỨU! Tôi có dấu hiệu đột quỵ. Hãy liên lạc ngay!"
   },
   en:{
     nav_dash:"Dashboard",nav_entry:"Daily Entry",nav_ex:"Exercise",nav_report:"Report",nav_schedule:"Schedule",nav_profile:"Profile",
@@ -191,7 +198,9 @@ var I18N={
     login_user_ph:"Enter your username",login_pass_ph:"Enter your password",reg_user_ph:"Choose a username",reg_pass_ph:"Minimum 6 characters",
     reg_health_title:"Health Profile",reg_bmi_title:"BMI Index",reg_bmi_direct:"Enter directly",reg_bmi_calc:"Calculate from height/weight",reg_bmi_label:"BMI value",reg_height:"Height (cm)",reg_weight:"Weight (kg)",reg_bmi_auto:"BMI (auto-calculated)",
     golden_hour:"GOLDEN HOUR",
-    delete_confirm:"Delete this event?"
+    delete_confirm:"Delete this event?",
+    emergency_title:"Emergency Contact",emergency_phone:"Family member's phone number",emergency_phone_ph:"e.g. +84912345678",emergency_hint:"This number will receive SOS messages with your location during emergencies.",
+    sos_btn:"SEND SOS",sos_msg:"EMERGENCY! I may be having a stroke. My location:",sos_msg_no_gps:"EMERGENCY! I may be having a stroke. Contact me immediately!"
   }
 };
 function changeLang(l){
@@ -233,6 +242,35 @@ function toggleMobileMenu(){
 }
 
 // ─── GLOBAL GOLDEN HOUR INIT ─────────────────────────────────
+// ─── GPS for SOS ──────────────────────────────────────────────
+var _sosLat=null, _sosLon=null;
+function captureGPS(){
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      function(p){_sosLat=p.coords.latitude;_sosLon=p.coords.longitude;},
+      function(){}, {timeout:8000, maximumAge:60000}
+    );
+  }
+}
+function sendSOS(e){
+  e.preventDefault();
+  {% if user is defined and user %}
+  var phone="{{ user.emergency_phone or '' }}";
+  {% else %}
+  var phone="";
+  {% endif %}
+  if(!phone)return;
+  var lang=localStorage.getItem('lang')||'vi';
+  var d=I18N[lang]||I18N.vi;
+  var body;
+  if(_sosLat && _sosLon){
+    body=d.sos_msg+' https://www.google.com/maps?q='+_sosLat+','+_sosLon;
+  } else {
+    body=d.sos_msg_no_gps;
+  }
+  window.location.href='sms:'+phone+'?body='+encodeURIComponent(body);
+}
+
 function initGoldenHour(){
   // Get start time from Backend User model if available
   {% if user is defined and user %}
@@ -243,6 +281,13 @@ function initGoldenHour(){
   {% endif %}
   
   if(!startStr)return;
+
+  // Capture GPS immediately when Golden Hour is active
+  captureGPS();
+
+  // Show SOS button
+  var sosBtn=document.getElementById('sos-btn');
+  if(sosBtn) sosBtn.classList.remove('hidden');
   
   // Handle ISO strings or timestamps
   var startTime = isNaN(startStr) ? new Date(startStr).getTime() : parseInt(startStr, 10);
