@@ -67,18 +67,28 @@
         </select>
       </div>
       <div class="form-group">
-        <label data-i18n="profile_work">Nghề nghiệp</label>
-        <select name="work_type" id="regWorkSelect" required onchange="toggleOtherWork(this)">
-          <option value="Business" data-i18n-opt="profile_work_business">Kinh doanh</option>
-          <option value="Govt_job" data-i18n-opt="profile_work_civil">Công chức</option>
-          <option value="Doctor" data-i18n-opt="profile_work_doctor">Bác sĩ</option>
-          <option value="Teacher" data-i18n-opt="profile_work_teacher">Giáo viên</option>
-          <option value="Other" data-i18n-opt="profile_work_other">Khác</option>
+        <label data-i18n="profile_married">Kết hôn</label>
+        <select name="ever_married" required>
+          <option value="Yes" data-i18n-opt="profile_married_yes">Đã kết hôn</option>
+          <option value="No" data-i18n-opt="profile_married_no">Chưa kết hôn</option>
         </select>
       </div>
-      <div class="form-group" id="regWorkOtherGroup" style="display:none">
-        <label data-i18n="profile_work_other">Khác</label>
-        <input type="text" name="work_type_other" id="regWorkOtherInput" data-i18n-placeholder="profile_work_other_ph" placeholder="Nhập nghề nghiệp của bạn">
+      <div class="form-group">
+        <label data-i18n="profile_residence">Nơi ở</label>
+        <select name="residence_type" required>
+          <option value="Urban" data-i18n-opt="profile_residence_urban">Thành thị</option>
+          <option value="Rural" data-i18n-opt="profile_residence_rural">Nông thôn</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label data-i18n="profile_work">Nghề nghiệp</label>
+        <select name="work_type" id="regWorkSelect" required>
+          <option value="Private" data-i18n-opt="profile_work_private">Tư nhân</option>
+          <option value="Self-employed" data-i18n-opt="profile_work_self">Tự do</option>
+          <option value="Govt_job" data-i18n-opt="profile_work_govt">Công chức</option>
+          <option value="children" data-i18n-opt="profile_work_children">Trẻ em</option>
+          <option value="Never_worked" data-i18n-opt="profile_work_never">Chưa từng làm việc</option>
+        </select>
       </div>
       <div class="form-group">
         <label data-i18n="profile_smoking">Hút thuốc</label>

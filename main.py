@@ -137,7 +137,8 @@ async def login_post(
     age: float = Form(None),
     gender: str = Form(None),
     work_type: str = Form(None),
-    work_type_other: str = Form(None),
+    ever_married: str = Form(None),
+    residence_type: str = Form(None),
     smoking_status: str = Form(None),
     heart_disease: int = Form(0),
     hypertension_history: int = Form(0),
@@ -150,10 +151,10 @@ async def login_post(
             return templates.TemplateResponse(request=request, name="login.html",
                 context={"error": "Tên đăng nhập đã tồn tại", "tab": "register"})
         hashed_pw = auth.get_password_hash(password)
-        final_work_type = work_type_other.strip() if (work_type == 'Other' and work_type_other and work_type_other.strip()) else work_type
         new_user = models.User(
             username=username, password_hash=hashed_pw,
-            age=age, gender=gender, work_type=final_work_type,
+            age=age, gender=gender, work_type=work_type,
+            ever_married=ever_married, residence_type=residence_type,
             smoking_status=smoking_status, heart_disease=heart_disease,
             hypertension_history=hypertension_history, bmi=bmi
         )
@@ -199,7 +200,8 @@ async def profile_post(
     age: float = Form(...),
     gender: str = Form(...),
     work_type: str = Form(...),
-    work_type_other: str = Form(None),
+    ever_married: str = Form(...),
+    residence_type: str = Form(...),
     smoking_status: str = Form(...),
     heart_disease: int = Form(0),
     hypertension_history: int = Form(0),
@@ -211,7 +213,9 @@ async def profile_post(
         return RedirectResponse(url="/login", status_code=302)
     user.age = age
     user.gender = gender
-    user.work_type = work_type_other.strip() if (work_type == 'Other' and work_type_other and work_type_other.strip()) else work_type
+    user.work_type = work_type
+    user.ever_married = ever_married
+    user.residence_type = residence_type
     user.smoking_status = smoking_status
     user.heart_disease = heart_disease
     user.hypertension_history = hypertension_history
@@ -352,6 +356,7 @@ async def form_post(
     
     fields = dict(
         age=user.age, gender=user.gender, work_type=user.work_type,
+        ever_married=user.ever_married, residence_type=user.residence_type,
         smoking_status=user.smoking_status, systolic=systolic, diastolic=diastolic,
         heart_disease=user.heart_disease, avg_glucose_level=parsed_glucose,
         bmi=user.bmi, fast_f=fast_f, fast_a=fast_a, fast_s=fast_s, fast_t=fast_t,

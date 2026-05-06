@@ -12,7 +12,9 @@ class User(Base):
     # Profile fields
     age = Column(Float, nullable=True)
     gender = Column(String, nullable=True)
+    ever_married = Column(String, nullable=True)
     work_type = Column(String, nullable=True)
+    residence_type = Column(String, nullable=True)
     smoking_status = Column(String, nullable=True)
     heart_disease = Column(Integer, default=0)
     hypertension_history = Column(Integer, default=0)
@@ -38,7 +40,9 @@ class HealthRecord(Base):
     # Snapshot of user profile at time of entry
     age = Column(Float)
     gender = Column(String)
+    ever_married = Column(String)
     work_type = Column(String)
+    residence_type = Column(String)
     smoking_status = Column(String)
     systolic = Column(Integer)
     diastolic = Column(Integer)

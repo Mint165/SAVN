@@ -20,12 +20,14 @@ with open('tests/synthetic_data.py', 'w', encoding='utf-8') as f:
         glucose = round(random.uniform(60.0, 250.0), 1)
         smoke = random.choice(['never smoked', 'formerly smoked', 'smokes', 'Unknown'])
         work = random.choice(['Private', 'Self-employed', 'Govt_job', 'children', 'Never_worked'])
+        married = random.choice(['Yes', 'No'])
+        residence = random.choice(['Urban', 'Rural'])
         fast_f = random.choice([0, 1, 2, 3])
         fast_a = random.choice([0, 1, 2, 3])
         fast_s = random.choice([0, 1, 2, 3])
         fast_t = random.choice([0, 1, 2, 3])
         
-        record = f"    {{'id': {i+1}, 'age': {age}, 'gender': '{gender}', 'hypertension': {hypertension}, 'heart_disease': {heart_disease}, 'bmi': {bmi}, 'avg_glucose_level': {glucose}, 'smoking_status': '{smoke}', 'work_type': '{work}', 'fast_f': {fast_f}, 'fast_a': {fast_a}, 'fast_s': {fast_s}, 'fast_t': {fast_t}}},\n"
+        record = f"    {{'id': {i+1}, 'age': {age}, 'gender': '{gender}', 'hypertension': {hypertension}, 'heart_disease': {heart_disease}, 'ever_married': '{married}', 'work_type': '{work}', 'Residence_type': '{residence}', 'avg_glucose_level': {glucose}, 'bmi': {bmi}, 'smoking_status': '{smoke}', 'fast_f': {fast_f}, 'fast_a': {fast_a}, 'fast_s': {fast_s}, 'fast_t': {fast_t}}},\n"
         f.write(record)
         
     f.write(']\n\n')
