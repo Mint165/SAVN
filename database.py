@@ -17,21 +17,13 @@ if not SQLALCHEMY_DATABASE_URL:
         # Fallback về SQLite khi phát triển ở máy cá nhân (Local) nếu chưa config .env
         SQLALCHEMY_DATABASE_URL = "sqlite:///./heartbits.db"
 
-# CHUẨN HÓA URL CHO SUPABASE
-if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+# CHUẨN HÓA URL CHO SUPABASE (Fix lỗi dsn và postgres://)
+if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
     # SQLAlchemy yêu cầu postgresql:// (có chữ l)
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Fix lỗi Prepared Statements khi dùng cổng 6543 (Transaction Mode)
-if ":6543" in SQLALCHEMY_DATABASE_URL:
-    if "?" in SQLALCHEMY_DATABASE_URL:
-        if "prepared_statements" not in SQLALCHEMY_DATABASE_URL:
-            SQLALCHEMY_DATABASE_URL += "&prepared_statements=false"
-    else:
-        SQLALCHEMY_DATABASE_URL += "?prepared_statements=false"
-
 # Cấu hình Engine dựa trên loại Database
-if "postgresql" in SQLALCHEMY_DATABASE_URL:
+if SQLALCHEMY_DATABASE_URL and "postgresql" in SQLALCHEMY_DATABASE_URL:
     # Cấu hình tối ưu cho Supabase Postgres
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL,
