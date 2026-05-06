@@ -182,7 +182,7 @@ a{text-decoration:none;color:inherit}
 .logout-item a i { color: var(--danger) !important; }
 .modal-content{width:92%;max-width:520px;max-height:88vh;overflow-y:auto;animation:slideUp .3s ease}
 @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
-.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+.mod.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
 .modal-header h3{font-size:1.2rem;font-weight:800}
 .btn-close{background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:.25rem;border-radius:.4rem}
 .btn-close:hover{color:var(--danger)}

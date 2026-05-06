@@ -95,14 +95,10 @@
 <!-- GOLDEN HOUR (global, persistent across all pages) -->
 <div id="golden-hour-overlay" class="hidden"></div>
 <div id="golden-hour-timer" class="hidden">
-  <svg class="progress-ring" width="120" height="120"><circle class="progress-ring__circle" stroke="#EF4444" stroke-width="8" fill="transparent" r="52" cx="60" cy="60"/></svg>
-  <div class="timer-text"><div class="timer-title" data-i18n="golden_hour">GIỜ VÀNG</div><div id="timer-countdown">04:30:00</div></div>
 </div>
-{% if user is defined and user and user.emergency_phone %}
 <a id="sos-btn" class="sos-floating-btn hidden" href="#" onclick="sendSOS(event)">
   <i class="fa-solid fa-phone-volume"></i> <span data-i18n="sos_btn">GỬI SOS</span>
 </a>
-{% endif %}
 {% endif %}
 
 {% block body %}{% endblock %}
@@ -274,21 +270,23 @@ function captureGPS(){
 }
 function sendSOS(e){
   e.preventDefault();
-  {% if user is defined and user %}
-  var phone="{{ user.emergency_phone or '' }}";
-  {% else %}
-  var phone="";
-  {% endif %}
-  if(!phone)return;
-  var lang=localStorage.getItem('lang')||'vi';
-  var d=I18N[lang]||I18N.vi;
-  var body;
-  if(_sosLat && _sosLon){
-    body=d.sos_msg+' https://www.google.com/maps?q='+_sosLat+','+_sosLon;
-  } else {
-    body=d.sos_msg_no_gps;
+  var phone = "{{ user.emergency_phone or '' if user else '' }}";
+  if(!phone) {
+    alert(localStorage.getItem('lang')==='en' ? "Please set an emergency contact in Profile first!" : "Vui lòng cài đặt số điện thoại người thân trong trang Hồ Sơ!");
+    return;
   }
-  window.location.href='sms:'+phone+'?body='+encodeURIComponent(body);
+  
+  var lang = localStorage.getItem('lang')||'vi';
+  var d = I18N[lang]||I18N.vi;
+  var body = (_sosLat && _sosLon) 
+    ? d.sos_msg + ' https://www.google.com/maps?q=' + _sosLat + ',' + _sosLon
+    : d.sos_msg_no_gps;
+
+  // Compatibility fix for iOS (uses &) vs Android (uses ?)
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  var smsLink = 'sms:' + phone + (isIOS ? '&' : '?') + 'body=' + encodeURIComponent(body);
+  
+  window.location.href = smsLink;
 }
 
 function initGoldenHour(){
