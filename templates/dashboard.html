@@ -18,7 +18,7 @@
   {% else %}
 
   {% if latest_record.override_msg %}
-  <div class="alert alert-danger"><i class="fa-solid fa-triangle-exclamation"></i><div>{{ latest_record.override_msg }}</div></div>
+  <div class="alert alert-danger"><i class="fa-solid fa-triangle-exclamation"></i><div data-i18n-override="{% if 'KHẨN CẤP' in latest_record.override_msg %}severe{% else %}clear{% endif %}">{{ latest_record.override_msg }}</div></div>
   {% endif %}
 
   <div class="summary-cards">
@@ -58,7 +58,7 @@
 
   <div class="card map-widget">
     <h3><i class="fa-solid fa-map-location-dot"></i> <span data-i18n="hospital_title">Bệnh Viện Gần Nhất</span></h3>
-    <a id="mapBtn" href="#" target="_blank" class="map-btn" onclick="openMap(event)">
+    <a id="mapBtn" href="https://www.google.com/maps/search/bệnh+viện+gần+nhất/" target="_blank" class="map-btn">
       <div class="map-btn-icon">🏥</div>
       <div class="map-btn-text"><strong data-i18n="hospital_find">Tìm bệnh viện gần tôi</strong><small data-i18n="hospital_desc">Mở Google Maps với vị trí của bạn</small></div>
       <i class="fa-solid fa-arrow-right" style="margin-left:auto;opacity:.7"></i>
@@ -72,24 +72,6 @@ var dates={{ dates|safe }};var systolicD={{ systolic|safe }};var diastolicD={{ d
 {% if latest_record %}var latestScore={{ latest_record.final_score }};{% else %}var latestScore=0;{% endif %}
 
 // Golden hour logic is now handled globally in base.html using backend data
-
-function openMap(e){
-  e.preventDefault();
-  const searchUrl = 'https://www.google.com/maps/search/bệnh+viện+gần+nhất/';
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      function(pos) {
-        window.open('https://www.google.com/maps/search/bệnh+viện/@' + pos.coords.latitude + ',' + pos.coords.longitude + ',14z', '_blank');
-      },
-      function() {
-        window.open(searchUrl, '_blank');
-      },
-      { timeout: 5000 }
-    );
-  } else {
-    window.open(searchUrl, '_blank');
-  }
-}
 </script>
 <script src="/static/js/dashboard.js"></script>
 {% endblock %}

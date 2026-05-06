@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var baseOpts = {
     responsive: true,
     animation: { duration: 900, easing: 'easeInOutQuart' },
-    plugins: { legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyleWidth: 10 } } },
+    plugins: { legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } } },
     scales: {
       x: { grid: { color: gridColor }, ticks: { color: textColor } },
       y: { grid: { color: gridColor }, ticks: { color: textColor } }

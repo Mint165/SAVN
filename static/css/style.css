@@ -449,7 +449,7 @@ a{text-decoration:none;color:inherit}
   position: absolute;
   inset: 0;
   background: rgba(0,0,0,0.4);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px);
   transition: opacity 0.3s;
 }
 .mobile-menu-overlay.hidden .mobile-menu-backdrop { opacity: 0; }
