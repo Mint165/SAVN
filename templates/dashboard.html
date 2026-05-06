@@ -24,7 +24,7 @@
   <div class="summary-cards">
     <div class="card stat-card">
       <div class="card-icon blood"><i class="fa-solid fa-droplet"></i></div>
-      <div class="card-info"><h3 data-i18n="bp_label">Huyết Áp</h3><div class="value">{{ latest_record.systolic }}<small style="font-size:1rem">/</small>{{ latest_record.diastolic }}</div><small class="text-muted" data-i18n="unit_mmhg">mmHg</small></div>
+      <div class="card-info"><h3 data-i18n="bp_label">Huyết Áp</h3><div class="value">{{ latest_record.systolic }}<span class="value-separator">/</span>{{ latest_record.diastolic }}</div><small class="text-muted" data-i18n="unit_mmhg">mmHg</small></div>
     </div>
     <div class="card stat-card">
       <div class="card-icon score"><i class="fa-solid fa-droplet-slash"></i></div>
@@ -73,7 +73,23 @@ var dates={{ dates|safe }};var systolicD={{ systolic|safe }};var diastolicD={{ d
 
 // Golden hour logic is now handled globally in base.html using backend data
 
-function openMap(e){e.preventDefault();if(navigator.geolocation){navigator.geolocation.getCurrentPosition(function(pos){window.open('https://www.google.com/maps/search/bệnh+viện/@'+pos.coords.latitude+','+pos.coords.longitude+',14z','_blank');},function(){window.open('https://www.google.com/maps/search/bệnh+viện+gần+đây/','_blank');});}else{window.open('https://www.google.com/maps/search/bệnh+viện+gần+đây/','_blank');}}
+function openMap(e){
+  e.preventDefault();
+  const searchUrl = 'https://www.google.com/maps/search/bệnh+viện+gần+nhất/';
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        window.open('https://www.google.com/maps/search/bệnh+viện/@' + pos.coords.latitude + ',' + pos.coords.longitude + ',14z', '_blank');
+      },
+      function() {
+        window.open(searchUrl, '_blank');
+      },
+      { timeout: 5000 }
+    );
+  } else {
+    window.open(searchUrl, '_blank');
+  }
+}
 </script>
 <script src="/static/js/dashboard.js"></script>
 {% endblock %}

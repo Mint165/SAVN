@@ -43,19 +43,26 @@
 
 <!-- Mobile Overlay Menu -->
 <div id="mobileMenuOverlay" class="mobile-menu-overlay hidden">
+  <div class="mobile-menu-backdrop" onclick="toggleMobileMenu()"></div>
   <div class="mobile-menu-content">
     <div class="mobile-menu-header">
-      <div class="mobile-brand"><i class="fa-solid fa-heart-pulse heartbeat-icon"></i> HeartBits</div>
-      <button class="btn-close" onclick="toggleMobileMenu()"><i class="fa-solid fa-times"></i></button>
+      <div class="user-info-brief">
+        <div class="user-avatar-large">{{ user.username[0].upper() }}</div>
+        <div class="user-details">
+          <span class="user-name">{{ user.username }}</span>
+          <span class="user-status" data-i18n="nav_profile">Hồ sơ cá nhân</span>
+        </div>
+      </div>
+      <button class="btn-close-menu" onclick="toggleMobileMenu()"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <ul class="mobile-menu-list">
-      <li><a href="/"><i class="fa-solid fa-chart-line"></i> <span data-i18n="nav_dash">Tổng quan</span></a></li>
-      <li><a href="/form"><i class="fa-solid fa-notes-medical"></i> <span data-i18n="nav_entry">Nhập dữ liệu</span></a></li>
-      <li><a href="/exercise"><i class="fa-solid fa-dumbbell"></i> <span data-i18n="nav_ex">Tập luyện</span></a></li>
-      <li><a href="/report"><i class="fa-solid fa-file-medical"></i> <span data-i18n="nav_report">Báo cáo</span></a></li>
-      <li><a href="/schedule"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav_schedule">Lịch</span></a></li>
-      <li><a href="/profile"><i class="fa-solid fa-id-card"></i> <span data-i18n="nav_profile">Hồ sơ</span></a></li>
-      <li><a href="/logout" style="color: var(--danger); border-top: 1px solid var(--border); margin-top: 1rem; padding-top: 1rem;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất</a></li>
+      <li><a href="/" onclick="toggleMobileMenu()"><i class="fa-solid fa-chart-line"></i> <span data-i18n="nav_dash">Tổng quan</span></a></li>
+      <li><a href="/form" onclick="toggleMobileMenu()"><i class="fa-solid fa-notes-medical"></i> <span data-i18n="nav_entry">Nhập dữ liệu</span></a></li>
+      <li><a href="/exercise" onclick="toggleMobileMenu()"><i class="fa-solid fa-dumbbell"></i> <span data-i18n="nav_ex">Tập luyện</span></a></li>
+      <li><a href="/report" onclick="toggleMobileMenu()"><i class="fa-solid fa-file-medical"></i> <span data-i18n="nav_report">Báo cáo</span></a></li>
+      <li><a href="/schedule" onclick="toggleMobileMenu()"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav_schedule">Lịch</span></a></li>
+      <li><a href="/profile" onclick="toggleMobileMenu()"><i class="fa-solid fa-id-card"></i> <span data-i18n="nav_profile">Hồ sơ</span></a></li>
+      <li class="logout-item"><a href="/logout"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span data-i18n="profile_logout">Đăng xuất</span></a></li>
     </ul>
   </div>
 </div>
