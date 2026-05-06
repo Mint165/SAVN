@@ -154,7 +154,8 @@ var I18N={
     golden_hour:"GIỜ VÀNG",
     delete_confirm:"Xóa lịch hẹn này?",
     emergency_title:"Liên Hệ Khẩn Cấp",emergency_phone:"Số điện thoại người thân",emergency_phone_ph:"VD: 0912345678",emergency_hint:"Số này sẽ nhận tin nhắn SOS kèm vị trí khi có cảnh báo khẩn cấp.",
-    sos_btn:"GỬI SOS",sos_msg:"CẤP CỨU! Tôi có dấu hiệu đột quỵ. Vị trí của tôi:",sos_msg_no_gps:"CẤP CỨU! Tôi có dấu hiệu đột quỵ. Hãy liên lạc ngay!"
+    sos_btn:"GỬI SOS",sos_msg:"CẤP CỨU! Tôi có dấu hiệu đột quỵ. Vị trí của tôi:",sos_msg_no_gps:"CẤP CỨU! Tôi có dấu hiệu đột quỵ. Hãy liên lạc ngay!",
+    ai_checker:"Kiểm Tra AI",ai_checker_title:"Kiểm Tra Triệu Chứng Bằng AI",ai_face_title:"Quét Khuôn Mặt",ai_face_desc:"Phân tích độ cân đối khuôn mặt qua camera",ai_face_score:"Độ cân đối",ai_face_normal:"Khuôn mặt cân đối",ai_face_alert:"PHÁT HIỆN ĐỘ LỆCH!",ai_voice_title:"Kiểm Tra Giọng Nói",ai_voice_desc:"Hãy đọc to câu sau:",ai_voice_btn:"Bắt Đầu Nói",ai_voice_listening:"Đang nghe...",ai_voice_result:"Kết quả",ai_voice_normal:"Giọng nói bình thường",ai_voice_alert:"Phát hiện bất thường giọng nói!",ai_voice_score:"Độ chính xác",ai_voice_not_supported:"Trình duyệt không hỗ trợ nhận diện giọng nói",ai_emergency_detected:"⚠️ AI PHÁT HIỆN TRIỆU CHỨNG ĐỘT QUỴ!"
   },
   en:{
     nav_dash:"Dashboard",nav_entry:"Daily Entry",nav_ex:"Exercise",nav_report:"Report",nav_schedule:"Schedule",nav_profile:"Profile",
@@ -200,7 +201,8 @@ var I18N={
     golden_hour:"GOLDEN HOUR",
     delete_confirm:"Delete this event?",
     emergency_title:"Emergency Contact",emergency_phone:"Family member's phone number",emergency_phone_ph:"e.g. +84912345678",emergency_hint:"This number will receive SOS messages with your location during emergencies.",
-    sos_btn:"SEND SOS",sos_msg:"EMERGENCY! I may be having a stroke. My location:",sos_msg_no_gps:"EMERGENCY! I may be having a stroke. Contact me immediately!"
+    sos_btn:"SEND SOS",sos_msg:"EMERGENCY! I may be having a stroke. My location:",sos_msg_no_gps:"EMERGENCY! I may be having a stroke. Contact me immediately!",
+    ai_checker:"AI Check",ai_checker_title:"AI Symptom Checker",ai_face_title:"Face Scan",ai_face_desc:"Analyze facial symmetry via camera",ai_face_score:"Symmetry",ai_face_normal:"Face is symmetrical",ai_face_alert:"ASYMMETRY DETECTED!",ai_voice_title:"Voice Check",ai_voice_desc:"Please read the following sentence aloud:",ai_voice_btn:"Start Speaking",ai_voice_listening:"Listening...",ai_voice_result:"Result",ai_voice_normal:"Speech is normal",ai_voice_alert:"Speech abnormality detected!",ai_voice_score:"Accuracy",ai_voice_not_supported:"Browser does not support speech recognition",ai_emergency_detected:"⚠️ AI DETECTED STROKE SYMPTOMS!"
   }
 };
 function changeLang(l){
@@ -242,6 +244,24 @@ function toggleMobileMenu(){
 }
 
 // ─── GLOBAL GOLDEN HOUR INIT ─────────────────────────────────
+// ─── triggerEmergency: called by AI Vision/Speech modules ──────
+window.triggerEmergency = function(source){
+  // 1. Notify backend to start Golden Hour
+  fetch('/api/trigger-golden-hour', {method:'POST',credentials:'same-origin'})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(data.ok){
+        // Reload to activate the Golden Hour timer display
+        location.reload();
+      }
+    }).catch(function(){});
+  // 2. GPS capture (already defined below)
+  captureGPS();
+  // 3. Show SOS button immediately
+  var sosBtn=document.getElementById('sos-btn');
+  if(sosBtn) sosBtn.classList.remove('hidden');
+};
+
 // ─── GPS for SOS ──────────────────────────────────────────────
 var _sosLat=null, _sosLon=null;
 function captureGPS(){

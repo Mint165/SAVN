@@ -633,3 +633,18 @@ async def hospitals_api():
         "maps_embed_search": "hospital+near+me",
     })
 
+
+# ============================================================
+# AI VISION: Trigger Golden Hour from frontend
+# ============================================================
+
+@app.post("/api/trigger-golden-hour")
+async def trigger_golden_hour_api(request: Request, db: Session = Depends(get_db)):
+    """Called by AI Vision/Speech when stroke symptoms are detected client-side."""
+    user = get_current_user(request, db)
+    if not user:
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    if not user.golden_hour_start:
+        user.golden_hour_start = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        db.commit()
+    return JSONResponse({"ok": True, "start": user.golden_hour_start})

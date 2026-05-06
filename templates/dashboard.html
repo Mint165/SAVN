@@ -42,6 +42,83 @@
     {% endif %}
   </div>
 
+  <!-- AI Symptom Checker Button -->
+  <div class="card ai-checker-card" onclick="openAIChecker()" style="margin-top:1rem;cursor:pointer">
+    <div style="display:flex;align-items:center;gap:1rem">
+      <div class="card-icon ai" style="background:linear-gradient(135deg,#8B5CF6,#EC4899);flex-shrink:0"><i class="fa-solid fa-brain"></i></div>
+      <div style="flex:1">
+        <h3 data-i18n="ai_checker_title" style="font-size:1rem;font-weight:700;margin:0">Kiểm Tra Triệu Chứng Bằng AI</h3>
+        <p class="text-muted" style="font-size:.82rem;margin:.25rem 0 0" data-i18n="ai_face_desc">Phân tích độ cân đối khuôn mặt qua camera</p>
+      </div>
+      <i class="fa-solid fa-chevron-right" style="opacity:.4"></i>
+    </div>
+  </div>
+
+  <!-- AI Checker Modal -->
+  <div id="aiCheckerModal" class="modal-overlay hidden">
+    <div class="modal-content card" style="max-width:560px;width:95%;max-height:90vh;overflow-y:auto">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-brain" style="color:#8B5CF6"></i> <span data-i18n="ai_checker_title">Kiểm Tra Triệu Chứng Bằng AI</span></h3>
+        <button class="btn-close" onclick="closeAIChecker()"><i class="fa-solid fa-times"></i></button>
+      </div>
+
+      <!-- Tab Buttons -->
+      <div class="ai-tabs">
+        <button class="ai-tab active" onclick="switchAITab('face')" id="tabFace">
+          <i class="fa-solid fa-face-smile"></i> <span data-i18n="ai_face_title">Quét Khuôn Mặt</span>
+        </button>
+        <button class="ai-tab" onclick="switchAITab('voice')" id="tabVoice">
+          <i class="fa-solid fa-microphone"></i> <span data-i18n="ai_voice_title">Kiểm Tra Giọng Nói</span>
+        </button>
+      </div>
+
+      <!-- Face Scan Panel -->
+      <div id="panelFace" class="ai-panel">
+        <div class="ai-camera-container">
+          <video id="aiVideo" autoplay playsinline muted style="display:none"></video>
+          <canvas id="aiCanvas"></canvas>
+          <div id="aiLoading" class="ai-loading"><div class="spinner"></div><p data-i18n="ai_face_desc">Đang tải AI...</p></div>
+        </div>
+        <div class="ai-meter">
+          <div class="label-group">
+            <span data-i18n="ai_face_score">Độ cân đối</span>
+            <span id="aiFaceScore">0%</span>
+          </div>
+          <div class="meter-bar"><div id="aiFaceBar" class="meter-fill"></div></div>
+          <div id="aiFaceStatus" class="ai-status ok" data-i18n="ai_face_normal">Khuôn mặt cân đối</div>
+        </div>
+      </div>
+
+      <!-- Voice Panel -->
+      <div id="panelVoice" class="ai-panel hidden">
+        <div class="ai-voice-section">
+          <p style="text-align:center;margin-bottom:.5rem" data-i18n="ai_voice_desc">Hãy đọc to câu sau:</p>
+          <div class="ai-reference-sentence" id="aiRefSentence">Trời hôm nay rất trong xanh</div>
+          <button class="btn btn-primary" onclick="startVoiceTest()" id="voiceStartBtn" style="width:100%;margin-top:1rem">
+            <i class="fa-solid fa-microphone"></i> <span data-i18n="ai_voice_btn">Bắt Đầu Nói</span>
+          </button>
+          <div id="voiceResult" class="hidden" style="margin-top:1rem">
+            <div class="ai-voice-transcript" id="voiceTranscript"></div>
+            <div class="ai-meter" style="margin-top:.75rem">
+              <div class="label-group">
+                <span data-i18n="ai_voice_score">Độ chính xác</span>
+                <span id="aiVoiceScore">—</span>
+              </div>
+              <div class="meter-bar"><div id="aiVoiceBar" class="meter-fill"></div></div>
+              <div id="aiVoiceStatus" class="ai-status ok"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Emergency Alert (shown when AI detects problem) -->
+      <div id="aiEmergencyAlert" class="ai-emergency-alert hidden">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span data-i18n="ai_emergency_detected">⚠️ AI PHÁT HIỆN TRIỆU CHỨNG ĐỘT QUỴ!</span>
+      </div>
+    </div>
+  </div>
+
   <div class="charts-container">
     <div class="card chart-card"><h3><i class="fa-solid fa-droplet"></i> <span data-i18n="chart_bp">Biến Động Huyết Áp</span></h3><canvas id="bpChart"></canvas></div>
     <div class="card chart-card"><h3><i class="fa-solid fa-chart-area"></i> <span data-i18n="chart_risk">Nguy Cơ Đột Quỵ (%)</span></h3><canvas id="riskChart"></canvas></div>
@@ -74,4 +151,137 @@ var dates={{ dates|safe }};var systolicD={{ systolic|safe }};var diastolicD={{ d
 // Golden hour logic is now handled globally in base.html using backend data
 </script>
 <script src="/static/js/dashboard.js"></script>
+
+<!-- MediaPipe Dependencies (loaded lazily) -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="/static/js/vision.js"></script>
+<script src="/static/js/speech.js"></script>
+
+<script>
+// ─── AI Checker Controller ────────────────────────────────────
+var _aiInitialized = false;
+
+function openAIChecker(){
+  document.getElementById('aiCheckerModal').classList.remove('hidden');
+  // Update reference sentence based on current language
+  var lang = localStorage.getItem('lang') || 'vi';
+  if(typeof HBSpeech !== 'undefined'){
+    document.getElementById('aiRefSentence').textContent = HBSpeech.getReference();
+  }
+  // Apply i18n to modal
+  changeLang(lang);
+  // Start face scan
+  startFaceScan();
+}
+
+function closeAIChecker(){
+  document.getElementById('aiCheckerModal').classList.add('hidden');
+  if(typeof HBVision !== 'undefined') HBVision.stop();
+  if(typeof HBSpeech !== 'undefined') HBSpeech.stop();
+}
+
+function switchAITab(tab){
+  document.getElementById('tabFace').classList.toggle('active', tab==='face');
+  document.getElementById('tabVoice').classList.toggle('active', tab==='voice');
+  document.getElementById('panelFace').classList.toggle('hidden', tab!=='face');
+  document.getElementById('panelVoice').classList.toggle('hidden', tab!=='voice');
+
+  if(tab==='face'){
+    startFaceScan();
+  } else {
+    if(typeof HBVision !== 'undefined') HBVision.stop();
+    // Update reference sentence
+    if(typeof HBSpeech !== 'undefined'){
+      document.getElementById('aiRefSentence').textContent = HBSpeech.getReference();
+    }
+  }
+}
+
+function startFaceScan(){
+  var videoEl = document.getElementById('aiVideo');
+  var canvasEl = document.getElementById('aiCanvas');
+  var loading = document.getElementById('aiLoading');
+
+  if(!_aiInitialized && typeof HBVision !== 'undefined'){
+    HBVision.init(videoEl, canvasEl, function(score, isAlert){
+      loading.style.display = 'none';
+      document.getElementById('aiFaceScore').textContent = score + '%';
+      var bar = document.getElementById('aiFaceBar');
+      bar.style.width = score + '%';
+      bar.style.background = isAlert ? 'var(--danger)' : 'var(--primary)';
+
+      var statusEl = document.getElementById('aiFaceStatus');
+      var lang = localStorage.getItem('lang') || 'vi';
+      var d = I18N[lang] || I18N.vi;
+      if(score > 15){
+        statusEl.textContent = d.ai_face_alert;
+        statusEl.className = 'ai-status alert';
+      } else {
+        statusEl.textContent = d.ai_face_normal;
+        statusEl.className = 'ai-status ok';
+      }
+
+      if(isAlert){
+        document.getElementById('aiEmergencyAlert').classList.remove('hidden');
+      }
+    });
+    _aiInitialized = true;
+  }
+  if(typeof HBVision !== 'undefined') HBVision.start(videoEl, canvasEl);
+}
+
+function startVoiceTest(){
+  var btn = document.getElementById('voiceStartBtn');
+  var lang = localStorage.getItem('lang') || 'vi';
+  var d = I18N[lang] || I18N.vi;
+
+  if(!HBSpeech.supported){
+    alert(d.ai_voice_not_supported);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + d.ai_voice_listening;
+
+  HBSpeech.start(function(result){
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-microphone"></i> ' + d.ai_voice_btn;
+
+    if(result.error){
+      if(result.error === 'not_supported'){
+        alert(d.ai_voice_not_supported);
+      }
+      return;
+    }
+
+    document.getElementById('voiceResult').classList.remove('hidden');
+    document.getElementById('voiceTranscript').textContent = '"' + result.transcript + '"';
+    document.getElementById('aiVoiceScore').textContent = result.score + '%';
+
+    var bar = document.getElementById('aiVoiceBar');
+    bar.style.width = result.score + '%';
+    bar.style.background = result.isNormal ? 'var(--primary)' : 'var(--danger)';
+
+    var statusEl = document.getElementById('aiVoiceStatus');
+    if(result.isNormal){
+      statusEl.textContent = d.ai_voice_normal;
+      statusEl.className = 'ai-status ok';
+    } else {
+      statusEl.textContent = d.ai_voice_alert;
+      statusEl.className = 'ai-status alert';
+      document.getElementById('aiEmergencyAlert').classList.remove('hidden');
+    }
+  });
+}
+
+// Override triggerEmergency to also show the alert inside the modal
+var _origTrigger = window.triggerEmergency;
+window.triggerEmergency = function(source){
+  var alertEl = document.getElementById('aiEmergencyAlert');
+  if(alertEl) alertEl.classList.remove('hidden');
+  if(_origTrigger) _origTrigger(source);
+};
+</script>
 {% endblock %}
