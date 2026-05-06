@@ -17,6 +17,20 @@ except Exception as e:
 
 app = FastAPI()
 
+@app.middleware("http")
+async def catch_exceptions_middleware(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception as e:
+        import traceback
+        print(f"CRITICAL ERROR: {e}")
+        traceback.print_exc()
+        return HTMLResponse(
+            content=f"<html><body><h1>System Error (HeartBits)</h1><p>Vui lòng báo lại lỗi này cho kỹ thuật:</p><pre>{e}</pre></body></html>",
+            status_code=500
+        )
+
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Ensure static and templates exist to prevent Starlette RuntimeError
