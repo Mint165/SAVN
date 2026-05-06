@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Nhập Dữ Liệu — HeartBits{% endblock %}
+{% block body %}
+<nav class="top-nav">
+  <a href="/" class="nav-brand"><i class="fa-solid fa-heart-pulse heartbeat-icon"></i> HeartBits</a>
+  <ul class="nav-menu">
+    <li><a href="/"><i class="fa-solid fa-chart-line"></i> <span data-i18n="nav_dash">Tổng quan</span></a></li>
+    <li class="active"><a href="/form"><i class="fa-solid fa-notes-medical"></i> <span data-i18n="nav_entry">Nhập dữ liệu</span></a></li>
+    <li><a href="/exercise"><i class="fa-solid fa-dumbbell"></i> <span data-i18n="nav_ex">Tập luyện</span></a></li>
+    <li><a href="/report"><i class="fa-solid fa-file-medical"></i> <span data-i18n="nav_report">Báo cáo</span></a></li>
+    <li><a href="/schedule"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav_schedule">Lịch</span></a></li>
+    <li><a href="/profile"><i class="fa-solid fa-id-card"></i> <span data-i18n="nav_profile">Hồ sơ</span></a></li>
+  </ul>
+  <div class="nav-right">
+    <div class="icon-btn" onclick="openSettings()"><i class="fa-solid fa-gear"></i></div>
+    <a href="/profile" class="user-avatar">{{ user.username[0].upper() }}</a>
+  </div>
+</nav>
+<div class="main-content">
+  <div class="page-header"><h1 data-i18n="page_form">Nhập Dữ Liệu Hôm Nay</h1></div>
+
+  {% if not user.age %}
+  <div class="alert alert-warning"><i class="fa-solid fa-triangle-exclamation"></i><div><span data-i18n="profile_incomplete">Bạn chưa hoàn thiện hồ sơ.</span> <a href="/profile" style="color:inherit;text-decoration:underline;font-weight:700" data-i18n="profile_update">Cập nhật ngay</a></div></div>
+  {% endif %}
+
+  <div class="card">
+    <form method="post" action="/form">
+      <div class="form-section"><h3><i class="fa-solid fa-calendar-day"></i> <span data-i18n="form_date">Ngày Ghi Nhận</span></h3><div class="form-group" style="max-width:220px"><input type="date" name="record_date" id="record_date" required></div></div>
+      <div class="form-section">
+        <h3><i class="fa-solid fa-stethoscope"></i> <span data-i18n="form_vitals">Chỉ Số Sinh Tồn</span></h3>
+        <div class="grid-2">
+          <div class="form-group"><label data-i18n="form_systolic">Huyết áp tâm thu</label><input type="number" name="systolic" required placeholder="VD: 120" min="60" max="250"></div>
+          <div class="form-group"><label data-i18n="form_diastolic">Huyết áp tâm trương</label><input type="number" name="diastolic" required placeholder="VD: 80" min="40" max="150"></div>
+          <div class="form-group full-width"><label data-i18n="form_glucose">Đường huyết</label><input type="number" step="any" name="avg_glucose_level" placeholder="VD: 100.5" min="40" max="600"><small style="color:var(--text-muted);margin-top:.25rem;display:block" data-i18n="form_glucose_hint">Tùy chọn — nếu bỏ trống, AI sẽ dự đoán dựa trên các chỉ số khác</small></div>
+        </div>
+      </div>
+      <div class="form-section">
+        <h3><i class="fa-solid fa-person-dots-from-line"></i> <span data-i18n="form_fast">Triệu Chứng FAST</span></h3>
+        <p style="color:var(--text-muted);margin-bottom:1.25rem;font-size:.9rem" data-i18n="form_fast_desc">Đánh giá từng triệu chứng theo mức độ bạn cảm nhận ngay lúc này.</p>
+        <div class="fast-grid">
+          {% set fast_items = [("fast_f","🫤","fast_f_label","fast_f_hint"),("fast_a","💪","fast_a_label","fast_a_hint"),("fast_s","💬","fast_s_label","fast_s_hint"),("fast_t","⏱️","fast_t_label","fast_t_hint")] %}
+          {% for name,icon,label_key,hint_key in fast_items %}
+          <div class="fast-item">
+            <div class="fast-item-label"><span class="fast-icon">{{ icon }}</span> <span data-i18n="{{ label_key }}">{% if name=='fast_f' %}F — Khuôn Mặt{% elif name=='fast_a' %}A — Cánh Tay{% elif name=='fast_s' %}S — Giọng Nói{% else %}T — Thời Gian{% endif %}</span></div>
+            <small style="color:var(--text-muted);display:block;margin-bottom:.75rem" data-i18n="{{ hint_key }}">{% if name=='fast_f' %}Méo miệng, mất cân đối khi cười{% elif name=='fast_a' %}Yếu tay, không nâng được hoặc run{% elif name=='fast_s' %}Nói lắp, khó phát âm, lú lẫn{% else %}Mất ý thức về thời gian, mất phương hướng{% endif %}</small>
+            <input type="hidden" name="{{ name }}" id="{{ name }}_val" value="0">
+            <div class="fast-levels">
+              <button type="button" class="fast-level-btn active-0" data-target="{{ name }}_val" data-val="0" onclick="setFast(this,0)" data-i18n="fast_none">Không</button>
+              <button type="button" class="fast-level-btn" data-target="{{ name }}_val" data-val="1" onclick="setFast(this,1)" data-i18n="fast_mild">Nhẹ</button>
+              <button type="button" class="fast-level-btn" data-target="{{ name }}_val" data-val="2" onclick="setFast(this,2)" data-i18n="fast_clear">Rõ</button>
+              <button type="button" class="fast-level-btn" data-target="{{ name }}_val" data-val="3" onclick="setFast(this,3)" data-i18n="fast_severe">Nặng</button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-large"><i class="fa-solid fa-brain"></i> <span data-i18n="form_submit">Phân Tích & Dự Đoán Nguy Cơ</span></button>
+    </form>
+  </div>
+</div>
+<script>
+document.getElementById('record_date').valueAsDate=new Date();
+function setFast(btn,val){var target=btn.getAttribute('data-target');document.getElementById(target).value=val;var parent=btn.closest('.fast-levels');parent.querySelectorAll('.fast-level-btn').forEach(function(b){b.classList.remove('active-0','active-1','active-2','active-3');});btn.classList.add('active-'+val);}
+</script>
+{% endblock %}

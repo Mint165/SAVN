@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Hồ Sơ — HeartBits{% endblock %}
+{% block body %}
+<nav class="top-nav">
+  <a href="/" class="nav-brand"><i class="fa-solid fa-heart-pulse heartbeat-icon"></i> HeartBits</a>
+  <ul class="nav-menu">
+    <li><a href="/"><i class="fa-solid fa-chart-line"></i> <span data-i18n="nav_dash">Tổng quan</span></a></li>
+    <li><a href="/form"><i class="fa-solid fa-notes-medical"></i> <span data-i18n="nav_entry">Nhập dữ liệu</span></a></li>
+    <li><a href="/exercise"><i class="fa-solid fa-dumbbell"></i> <span data-i18n="nav_ex">Tập luyện</span></a></li>
+    <li><a href="/report"><i class="fa-solid fa-file-medical"></i> <span data-i18n="nav_report">Báo cáo</span></a></li>
+    <li><a href="/schedule"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav_schedule">Lịch</span></a></li>
+    <li class="active"><a href="/profile"><i class="fa-solid fa-id-card"></i> <span data-i18n="nav_profile">Hồ sơ</span></a></li>
+  </ul>
+  <div class="nav-right">
+    <div class="icon-btn" onclick="openSettings()"><i class="fa-solid fa-gear"></i></div>
+    <a href="/profile" class="user-avatar">{{ user.username[0].upper() }}</a>
+  </div>
+</nav>
+<div class="main-content">
+  <div class="page-header"><h1 data-i18n="page_profile">Hồ Sơ Cá Nhân</h1></div>
+
+  {% if request.query_params.get('setup') %}
+  <div class="alert alert-warning"><i class="fa-solid fa-triangle-exclamation"></i><div><strong data-i18n="profile_setup_alert">Hoàn thiện hồ sơ trước khi nhập dữ liệu!</strong> <span data-i18n="profile_setup_desc">Thông tin của bạn giúp hệ thống AI dự đoán chính xác hơn.</span></div></div>
+  {% endif %}
+
+  <div class="profile-grid">
+    <div>
+      <div class="card profile-sidebar-card" style="margin-bottom:1.25rem">
+        <div class="profile-avatar-big">{{ user.username[0].upper() }}</div>
+        <div class="profile-username">{{ user.username }}</div>
+        <div style="margin-top:1.25rem">
+          <div class="streak-badge" style="margin-bottom:1rem"><span class="flame">🔥</span> {{ user.exercise_streak or 0 }} <span data-i18n="unit_days">ngày</span></div>
+          <p class="text-muted" style="font-size:.82rem" data-i18n="streak_label">Chuỗi tập luyện liên tiếp</p>
+        </div>
+      </div>
+      <div class="card" style="padding:1.25rem">
+        <h3 style="font-weight:700;margin-bottom:1rem;font-size:1rem" data-i18n="profile_info">Thông Tin Hồ Sơ</h3>
+        <div class="profile-stat"><span data-i18n="profile_age">Tuổi</span><strong>{{ user.age or '—' }}</strong></div>
+        <div class="profile-stat"><span data-i18n="profile_gender">Giới tính</span><strong><span data-i18n="profile_gender_{{ 'male' if user.gender=='Male' else ('female' if user.gender=='Female' else 'other') }}">{{ 'Nam' if user.gender=='Male' else ('Nữ' if user.gender=='Female' else (user.gender or '—')) }}</span></strong></div>
+        <div class="profile-stat"><span data-i18n="profile_work">Nghề nghiệp</span><strong>{% if user.work_type == 'Business' %}<span data-i18n="profile_work_business">Kinh doanh</span>{% elif user.work_type == 'Govt_job' %}<span data-i18n="profile_work_civil">Công chức</span>{% elif user.work_type == 'Doctor' %}<span data-i18n="profile_work_doctor">Bác sĩ</span>{% elif user.work_type == 'Teacher' %}<span data-i18n="profile_work_teacher">Giáo viên</span>{% else %}<span>{{ user.work_type or '—' }}</span>{% endif %}</strong></div>
+        <div class="profile-stat"><span data-i18n="profile_bmi">BMI</span><strong>{{ user.bmi or '—' }}</strong></div>
+        <div class="profile-stat"><span data-i18n="profile_smoking">Hút thuốc</span><strong><span data-i18n="profile_smoking_{{ {'never smoked':'never','formerly smoked':'former','smokes':'current','Unknown':'unknown'}.get(user.smoking_status, 'unknown') }}">{{ {'never smoked':'Chưa từng hút','formerly smoked':'Đã bỏ thuốc','smokes':'Đang hút','Unknown':'Không rõ'}.get(user.smoking_status, user.smoking_status or '—') }}</span></strong></div>
+        <div class="profile-stat"><span data-i18n="profile_heart">Bệnh tim</span><strong><span data-i18n="profile_{{ 'yes' if user.heart_disease else 'no' }}">{{ 'Có' if user.heart_disease else 'Không' }}</span></strong></div>
+        <div class="profile-stat"><span data-i18n="profile_hypertension">Huyết áp cao</span><strong><span data-i18n="profile_{{ 'yes' if user.hypertension_history else 'no' }}">{{ 'Có' if user.hypertension_history else 'Không' }}</span></strong></div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:1.5rem">
+        <h3 style="font-weight:700;margin-bottom:1.25rem;font-size:1.05rem"><i class="fa-solid fa-pen"></i> <span data-i18n="profile_edit">Chỉnh Sửa Hồ Sơ</span></h3>
+        <form method="post" action="/profile">
+          <div class="grid-2">
+            <div class="form-group"><label data-i18n="profile_age">Tuổi</label><input type="number" name="age" value="{{ user.age or '' }}" required min="1" max="120"></div>
+            <div class="form-group"><label data-i18n="profile_gender">Giới tính</label><select name="gender" required><option value="Male" {% if user.gender=='Male' %}selected{% endif %} data-i18n-opt="profile_gender_male">Nam</option><option value="Female" {% if user.gender=='Female' %}selected{% endif %} data-i18n-opt="profile_gender_female">Nữ</option><option value="Other" {% if user.gender=='Other' %}selected{% endif %} data-i18n-opt="profile_gender_other">Khác</option></select></div>
+            <div class="form-group"><label data-i18n="profile_work">Nghề nghiệp</label><select name="work_type" id="profileWorkSelect" required onchange="toggleProfileOtherWork(this)"><option value="Business" {% if user.work_type=='Business' %}selected{% endif %} data-i18n-opt="profile_work_business">Kinh doanh</option><option value="Govt_job" {% if user.work_type=='Govt_job' %}selected{% endif %} data-i18n-opt="profile_work_civil">Công chức</option><option value="Doctor" {% if user.work_type=='Doctor' %}selected{% endif %} data-i18n-opt="profile_work_doctor">Bác sĩ</option><option value="Teacher" {% if user.work_type=='Teacher' %}selected{% endif %} data-i18n-opt="profile_work_teacher">Giáo viên</option><option value="Other" {% if user.work_type not in ['Business','Govt_job','Doctor','Teacher'] and user.work_type %}selected{% endif %} data-i18n-opt="profile_work_other">Khác</option></select></div>
+            <div class="form-group" id="profileWorkOtherGroup" style="{% if user.work_type in ['Business','Govt_job','Doctor','Teacher'] or not user.work_type %}display:none{% endif %}"><label data-i18n="profile_work_other">Khác</label><input type="text" name="work_type_other" id="profileWorkOtherInput" value="{% if user.work_type not in ['Business','Govt_job','Doctor','Teacher'] %}{{ user.work_type or '' }}{% endif %}" data-i18n-placeholder="profile_work_other_ph" placeholder="Nhập nghề nghiệp của bạn"></div>
+            <div class="form-group"><label data-i18n="profile_smoking">Hút thuốc</label><select name="smoking_status" required><option value="never smoked" {% if user.smoking_status=='never smoked' %}selected{% endif %} data-i18n-opt="profile_smoking_never">Chưa từng hút</option><option value="formerly smoked" {% if user.smoking_status=='formerly smoked' %}selected{% endif %} data-i18n-opt="profile_smoking_former">Đã bỏ thuốc</option><option value="smokes" {% if user.smoking_status=='smokes' %}selected{% endif %} data-i18n-opt="profile_smoking_current">Đang hút</option><option value="Unknown" {% if user.smoking_status=='Unknown' %}selected{% endif %} data-i18n-opt="profile_smoking_unknown">Không rõ</option></select></div>
+            <div class="form-group"><label data-i18n="profile_bmi">Chỉ số BMI</label><input type="number" step="0.1" name="bmi" value="{{ user.bmi or '' }}" required min="10" max="60"></div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group checkbox-group"><label><input type="checkbox" name="heart_disease" value="1" {% if user.heart_disease %}checked{% endif %}> <span data-i18n="profile_heart">Tiền sử bệnh tim</span></label></div>
+            <div class="form-group checkbox-group"><label><input type="checkbox" name="hypertension_history" value="1" {% if user.hypertension_history %}checked{% endif %}> <span data-i18n="profile_hypertension">Tiền sử huyết áp cao</span></label></div>
+          </div>
+          <button type="submit" class="btn btn-primary mt-3"><i class="fa-solid fa-save"></i> <span data-i18n="profile_save">Lưu Thay Đổi</span></button>
+        </form>
+      </div>
+
+      {% if recent_records %}
+      <div class="card">
+        <h3 style="font-weight:700;margin-bottom:1rem;font-size:1rem"><i class="fa-solid fa-history"></i> <span data-i18n="profile_history">Lịch Sử Gần Đây</span></h3>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+            <thead><tr style="border-bottom:2px solid var(--border)"><th style="padding:.6rem;text-align:left;color:var(--text-muted);font-weight:600" data-i18n="th_date">Ngày</th><th style="padding:.6rem;text-align:center;color:var(--text-muted);font-weight:600" data-i18n="th_bp">Huyết áp</th><th style="padding:.6rem;text-align:center;color:var(--text-muted);font-weight:600" data-i18n="th_glucose">Đường huyết</th><th style="padding:.6rem;text-align:center;color:var(--text-muted);font-weight:600" data-i18n="th_risk">Nguy cơ</th></tr></thead>
+            <tbody>{% for r in recent_records %}<tr style="border-bottom:1px solid var(--border)"><td style="padding:.6rem">{{ r.date.strftime("%d/%m/%Y") }}</td><td style="padding:.6rem;text-align:center">{{ r.systolic }}/{{ r.diastolic }}</td><td style="padding:.6rem;text-align:center">{% if r.avg_glucose_level %}{{ r.avg_glucose_level | round(1) }}{% else %}—{% endif %}</td><td style="padding:.6rem;text-align:center"><span style="font-weight:700;color:{% if r.final_score>=75 %}var(--danger){% elif r.final_score>=35 %}var(--warning){% else %}var(--success){% endif %}">{{ r.final_score }}%</span></td></tr>{% endfor %}</tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="margin-top:1.5rem;text-align:right">
+    <a href="/logout" class="btn btn-danger-outline"><i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="profile_logout">Đăng Xuất</span></a>
+  </div>
+</div>
+<script>
+function toggleProfileOtherWork(sel){
+  var g=document.getElementById('profileWorkOtherGroup');
+  g.style.display=sel.value==='Other'?'block':'none';
+}
+</script>
+{% endblock %}

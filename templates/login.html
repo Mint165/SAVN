@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Đăng Nhập — HeartBits{% endblock %}
+{% block body %}
+<div class="login-container">
+<div class="login-card card">
+  <!-- Language toggle top-right -->
+  <div style="text-align:right;margin-bottom:.75rem">
+    <select id="loginLangSelect" onchange="changeLang(this.value)" style="background:var(--bg-card2);border:1px solid var(--border);border-radius:.5rem;padding:.35rem .6rem;font-size:.82rem;color:var(--text);font-family:inherit;cursor:pointer">
+      <option value="vi">🇻🇳 Tiếng Việt</option>
+      <option value="en">🇬🇧 English</option>
+    </select>
+  </div>
+
+  <div class="login-header">
+    <i class="fa-solid fa-heart-pulse heartbeat-icon" style="font-size:2.5rem"></i>
+    <h2>HeartBits</h2>
+    <p data-i18n="login_subtitle">Theo dõi sức khỏe — Dự đoán rủi ro đột quỵ</p>
+  </div>
+
+  <div class="auth-tabs">
+    <button class="auth-tab {% if tab!='register' %}active{% endif %}" onclick="switchTab('login')" id="tab-login" data-i18n="login_title">Đăng Nhập</button>
+    <button class="auth-tab {% if tab=='register' %}active{% endif %}" onclick="switchTab('register')" id="tab-register" data-i18n="register_title">Đăng Ký</button>
+  </div>
+
+  {% if error %}<div class="error-msg"><i class="fa-solid fa-circle-exclamation"></i> {{ error }}</div>{% endif %}
+
+  <!-- LOGIN FORM -->
+  <form method="post" action="/login" id="form-login" class="{% if tab=='register' %}hidden{% endif %}">
+    <input type="hidden" name="action" value="login">
+    <div class="form-group">
+      <label><i class="fa-solid fa-user"></i> <span data-i18n="login_username">Tên đăng nhập</span></label>
+      <input type="text" name="username" required data-i18n-placeholder="login_user_ph" placeholder="Nhập tên tài khoản" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label><i class="fa-solid fa-lock"></i> <span data-i18n="login_password">Mật khẩu</span></label>
+      <input type="password" name="password" required data-i18n-placeholder="login_pass_ph" placeholder="Nhập mật khẩu" autocomplete="current-password">
+    </div>
+    <button type="submit" class="btn btn-primary btn-large mt-3">
+      <i class="fa-solid fa-right-to-bracket"></i> <span data-i18n="login_btn">Đăng Nhập</span>
+    </button>
+  </form>
+
+  <!-- REGISTER FORM -->
+  <form method="post" action="/login" id="form-register" class="{% if tab!='register' %}hidden{% endif %}">
+    <input type="hidden" name="action" value="register">
+    <div class="form-group">
+      <label><i class="fa-solid fa-user"></i> <span data-i18n="login_username">Tên đăng nhập</span></label>
+      <input type="text" name="username" required data-i18n-placeholder="reg_user_ph" placeholder="Chọn tên tài khoản">
+    </div>
+    <div class="form-group">
+      <label><i class="fa-solid fa-lock"></i> <span data-i18n="login_password">Mật khẩu</span></label>
+      <input type="password" name="password" required data-i18n-placeholder="reg_pass_ph" placeholder="Tối thiểu 6 ký tự">
+    </div>
+
+    <div class="form-section-title mt-3" data-i18n="reg_health_title">Hồ Sơ Sức Khỏe</div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label data-i18n="profile_age">Tuổi</label>
+        <input type="number" step="1" name="age" required placeholder="VD: 65" min="1" max="120">
+      </div>
+      <div class="form-group">
+        <label data-i18n="profile_gender">Giới tính</label>
+        <select name="gender" required>
+          <option value="Male" data-i18n-opt="profile_gender_male">Nam</option>
+          <option value="Female" data-i18n-opt="profile_gender_female">Nữ</option>
+          <option value="Other" data-i18n-opt="profile_gender_other">Khác</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label data-i18n="profile_work">Nghề nghiệp</label>
+        <select name="work_type" id="regWorkSelect" required onchange="toggleOtherWork(this)">
+          <option value="Business" data-i18n-opt="profile_work_business">Kinh doanh</option>
+          <option value="Govt_job" data-i18n-opt="profile_work_civil">Công chức</option>
+          <option value="Doctor" data-i18n-opt="profile_work_doctor">Bác sĩ</option>
+          <option value="Teacher" data-i18n-opt="profile_work_teacher">Giáo viên</option>
+          <option value="Other" data-i18n-opt="profile_work_other">Khác</option>
+        </select>
+      </div>
+      <div class="form-group" id="regWorkOtherGroup" style="display:none">
+        <label data-i18n="profile_work_other">Khác</label>
+        <input type="text" name="work_type_other" id="regWorkOtherInput" data-i18n-placeholder="profile_work_other_ph" placeholder="Nhập nghề nghiệp của bạn">
+      </div>
+      <div class="form-group">
+        <label data-i18n="profile_smoking">Hút thuốc</label>
+        <select name="smoking_status" required>
+          <option value="never smoked" data-i18n-opt="profile_smoking_never">Chưa từng hút</option>
+          <option value="formerly smoked" data-i18n-opt="profile_smoking_former">Đã bỏ thuốc</option>
+          <option value="smokes" data-i18n-opt="profile_smoking_current">Đang hút</option>
+          <option value="Unknown" data-i18n-opt="profile_smoking_unknown">Không rõ</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group checkbox-group">
+        <label><input type="checkbox" name="heart_disease" value="1"> <span data-i18n="profile_heart">Tiền sử bệnh tim</span></label>
+      </div>
+      <div class="form-group checkbox-group">
+        <label><input type="checkbox" name="hypertension_history" value="1"> <span data-i18n="profile_hypertension">Tiền sử huyết áp cao</span></label>
+      </div>
+    </div>
+
+    <div class="form-section-title" data-i18n="reg_bmi_title">Chỉ Số BMI</div>
+    <div class="bmi-options">
+      <label><input type="radio" name="bmi_m" value="direct" checked onchange="toggleBMI()"> <span data-i18n="reg_bmi_direct">Nhập trực tiếp</span></label>
+      <label><input type="radio" name="bmi_m" value="calc" onchange="toggleBMI()"> <span data-i18n="reg_bmi_calc">Tính từ chiều cao/cân nặng</span></label>
+    </div>
+    <div id="bmi-direct" class="form-group">
+      <label data-i18n="reg_bmi_label">Chỉ số BMI</label>
+      <input type="number" step="any" name="bmi" id="bmi_val" placeholder="VD: 23.5" min="10" max="60">
+    </div>
+    <div id="bmi-calc" class="grid-2 hidden">
+      <div class="form-group">
+        <label data-i18n="reg_height">Chiều cao (cm)</label>
+        <input type="number" step="any" id="ht" placeholder="VD: 165" oninput="calcBMI()">
+      </div>
+      <div class="form-group">
+        <label data-i18n="reg_weight">Cân nặng (kg)</label>
+        <input type="number" step="any" id="wt" placeholder="VD: 60.5" oninput="calcBMI()">
+      </div>
+      <div class="form-group full-width">
+        <label data-i18n="reg_bmi_auto">BMI (tự động tính)</label>
+        <input type="number" id="bmi_calc_show" disabled placeholder="Sẽ tự tính...">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary btn-large mt-3" onclick="prepReg()">
+      <i class="fa-solid fa-user-plus"></i> <span data-i18n="register_btn">Tạo Tài Khoản</span>
+    </button>
+  </form>
+</div>
+</div>
+<script>
+function switchTab(t){
+  document.getElementById('form-login').classList.toggle('hidden',t!=='login');
+  document.getElementById('form-register').classList.toggle('hidden',t!=='register');
+  document.getElementById('tab-login').classList.toggle('active',t==='login');
+  document.getElementById('tab-register').classList.toggle('active',t==='register');
+}
+function toggleBMI(){
+  var m=document.querySelector('input[name="bmi_m"]:checked').value;
+  document.getElementById('bmi-direct').classList.toggle('hidden',m!=='direct');
+  document.getElementById('bmi-calc').classList.toggle('hidden',m!=='calc');
+}
+function calcBMI(){
+  var h=parseFloat(document.getElementById('ht').value)/100;
+  var w=parseFloat(document.getElementById('wt').value);
+  if(h>0&&w>0){var b=(w/(h*h)).toFixed(1);document.getElementById('bmi_calc_show').value=b;document.getElementById('bmi_val').value=b;}
+}
+function prepReg(){
+  if(document.querySelector('input[name="bmi_m"]:checked').value==='calc'){
+    document.getElementById('bmi_val').value=document.getElementById('bmi_calc_show').value;
+  }
+  // Handle "Other" work type
+  var ws=document.getElementById('regWorkSelect');
+  if(ws.value==='Other'){
+    var ov=document.getElementById('regWorkOtherInput').value.trim();
+    if(ov){ws.name='_work_ignore';var h=document.createElement('input');h.type='hidden';h.name='work_type';h.value=ov;ws.form.appendChild(h);}
+  }
+}
+function toggleOtherWork(sel){
+  var g=document.getElementById('regWorkOtherGroup');
+  g.style.display=sel.value==='Other'?'block':'none';
+  if(sel.value==='Other')document.getElementById('regWorkOtherInput').focus();
+}
+// Set saved language on load
+document.addEventListener('DOMContentLoaded',function(){
+  var ls=document.getElementById('loginLangSelect');
+  if(ls)ls.value=localStorage.getItem('lang')||'vi';
+});
+</script>
+{% endblock %}

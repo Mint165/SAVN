@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Lịch — HeartBits{% endblock %}
+{% block body %}
+<nav class="top-nav">
+  <a href="/" class="nav-brand"><i class="fa-solid fa-heart-pulse heartbeat-icon"></i> HeartBits</a>
+  <ul class="nav-menu">
+    <li><a href="/"><i class="fa-solid fa-chart-line"></i> <span data-i18n="nav_dash">Tổng quan</span></a></li>
+    <li><a href="/form"><i class="fa-solid fa-notes-medical"></i> <span data-i18n="nav_entry">Nhập dữ liệu</span></a></li>
+    <li><a href="/exercise"><i class="fa-solid fa-dumbbell"></i> <span data-i18n="nav_ex">Tập luyện</span></a></li>
+    <li><a href="/report"><i class="fa-solid fa-file-medical"></i> <span data-i18n="nav_report">Báo cáo</span></a></li>
+    <li class="active"><a href="/schedule"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav_schedule">Lịch</span></a></li>
+    <li><a href="/profile"><i class="fa-solid fa-id-card"></i> <span data-i18n="nav_profile">Hồ sơ</span></a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="btn btn-primary" style="padding:.5rem 1rem;font-size:.85rem" onclick="openAddModal()"><i class="fa-solid fa-plus"></i> <span data-i18n="schedule_add">Thêm lịch</span></button>
+    <div class="icon-btn" onclick="openSettings()"><i class="fa-solid fa-gear"></i></div>
+    <a href="/profile" class="user-avatar">{{ user.username[0].upper() }}</a>
+  </div>
+</nav>
+<div class="main-content">
+  <div class="page-header"><h1 data-i18n="page_schedule">Lịch Nhắc Nhở</h1></div>
+  <div class="calendar-wrapper">
+    <div>
+      <div class="card" style="padding:1.25rem">
+        <div class="cal-nav">
+          <button onclick="changeMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+          <h3 id="calMonthYear"></h3>
+          <button onclick="changeMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+        <div class="calendar-grid" id="calGrid"></div>
+      </div>
+      <!-- Day detail panel -->
+      <div class="card mt-3" id="dayDetailPanel" style="display:none">
+        <h3 style="font-weight:700;font-size:.95rem;margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem"><i class="fa-solid fa-calendar-check" style="color:var(--primary)"></i> <span id="dayDetailTitle" data-i18n="schedule_day_detail">Nhắc nhở ngày</span> <span id="dayDetailDate" style="color:var(--primary)"></span></h3>
+        <div id="dayDetailList"></div>
+      </div>
+    </div>
+    <div class="schedule-sidebar">
+      <div class="card">
+        <h3 style="font-weight:700;margin-bottom:1rem;font-size:1rem"><i class="fa-solid fa-list-check"></i> <span data-i18n="schedule_upcoming">Lịch hẹn sắp tới</span></h3>
+        <div class="schedule-list" id="scheduleList">
+          {% if schedules %}{% for s in schedules %}
+          <div class="schedule-item" data-id="{{ s.id }}">
+            <div class="sch-icon {{ s.schedule_type }}">{% if s.schedule_type == 'medication' %}<i class="fa-solid fa-pills"></i>{% else %}<i class="fa-solid fa-stethoscope"></i>{% endif %}</div>
+            <div class="sch-info"><strong>{{ s.title }}</strong><small>{{ s.date.strftime("%d/%m/%Y") }}{% if s.time %} • {{ s.time }}{% endif %}</small>{% if s.description %}<small style="display:block;margin-top:.2rem">{{ s.description }}</small>{% endif %}</div>
+            <button class="btn-close" style="font-size:.9rem" onclick="deleteSchedule({{ s.id }})" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+          </div>
+          {% endfor %}{% else %}
+          <p class="text-muted" style="text-align:center;padding:2rem;font-size:.9rem"><span data-i18n="schedule_empty">Chưa có lịch hẹn nào.</span><br><span data-i18n="schedule_empty_hint">Nhấn "Thêm lịch" để tạo mới.</span></p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="addScheduleModal" class="modal-overlay hidden">
+  <div class="modal-content card">
+    <div class="modal-header"><h3><i class="fa-solid fa-calendar-plus"></i> <span data-i18n="schedule_add">Thêm Lịch Mới</span></h3><button class="btn-close" onclick="closeModal('addScheduleModal')"><i class="fa-solid fa-times"></i></button></div>
+    <form method="post" action="/schedule">
+      <div class="form-group"><label data-i18n="schedule_type">Loại lịch</label><select name="schedule_type" required><option value="medication" data-i18n-opt="schedule_med">💊 Uống thuốc</option><option value="checkup" data-i18n-opt="schedule_checkup">🏥 Khám sức khỏe</option></select></div>
+      <div class="form-group"><label data-i18n="schedule_title_label">Tiêu đề</label><input type="text" name="title" required placeholder="VD: Uống thuốc huyết áp"></div>
+      <div class="form-group"><label data-i18n="schedule_desc">Mô tả (tùy chọn)</label><input type="text" name="description" placeholder="VD: 1 viên sau bữa sáng"></div>
+      <div class="grid-2">
+        <div class="form-group"><label data-i18n="schedule_date">Ngày</label><input type="date" name="date" required></div>
+        <div class="form-group"><label data-i18n="schedule_time">Giờ (tùy chọn)</label><input type="time" name="time"></div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-large mt-3"><i class="fa-solid fa-plus"></i> <span data-i18n="schedule_add_btn">Thêm Lịch</span></button>
+    </form>
+  </div>
+</div>
+
+<script>
+var scheduleDates={{ schedule_dates|safe }};
+var allSchedules={{ all_schedules_json|safe }};
+var currentMonth={{ current_month }};var currentYear={{ current_year }};var today=new Date();
+
+function openAddModal(){document.getElementById('addScheduleModal').classList.remove('hidden');}
+function changeMonth(delta){currentMonth+=delta;if(currentMonth>12){currentMonth=1;currentYear++;}if(currentMonth<1){currentMonth=12;currentYear--;}renderCalendar();}
+
+function renderCalendar(){
+  var lang=localStorage.getItem('lang')||'vi';
+  var monthNames=lang==='en'?['','January','February','March','April','May','June','July','August','September','October','November','December']:['','Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+  var dayNames=lang==='en'?['Sun','Mon','Tue','Wed','Thu','Fri','Sat']:['CN','T2','T3','T4','T5','T6','T7'];
+  document.getElementById('calMonthYear').textContent=monthNames[currentMonth]+' '+currentYear;
+  var grid=document.getElementById('calGrid');var html='';
+  for(var i=0;i<7;i++)html+='<div class="cal-header">'+dayNames[i]+'</div>';
+  var firstDay=new Date(currentYear,currentMonth-1,1).getDay();var daysInMonth=new Date(currentYear,currentMonth,0).getDate();var daysInPrev=new Date(currentYear,currentMonth-1,0).getDate();
+  for(var i=firstDay-1;i>=0;i--)html+='<div class="cal-day other-month"><div class="day-num">'+(daysInPrev-i)+'</div></div>';
+  for(var d=1;d<=daysInMonth;d++){
+    var dateStr=currentYear+'-'+String(currentMonth).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var isToday=(d===today.getDate()&&currentMonth===today.getMonth()+1&&currentYear===today.getFullYear());
+    var hasEvents=!!scheduleDates[dateStr];
+    var cls='cal-day'+(isToday?' today':'')+(hasEvents?' has-events':'');
+    var dots='';if(scheduleDates[dateStr]){for(var t=0;t<scheduleDates[dateStr].length;t++)dots+='<span class="cal-dot '+scheduleDates[dateStr][t]+'"></span>';}
+    html+='<div class="'+cls+'" onclick="showDayDetail(\''+dateStr+'\','+d+')"><div class="day-num">'+d+'</div>'+dots+'</div>';
+  }
+  var totalCells=firstDay+daysInMonth;var remaining=totalCells%7===0?0:7-(totalCells%7);
+  for(var i=1;i<=remaining;i++)html+='<div class="cal-day other-month"><div class="day-num">'+i+'</div></div>';
+  grid.innerHTML=html;
+}
+
+function showDayDetail(dateStr,dayNum){
+  var panel=document.getElementById('dayDetailPanel');
+  var list=document.getElementById('dayDetailList');
+  var dateEl=document.getElementById('dayDetailDate');
+  var lang=localStorage.getItem('lang')||'vi';
+  dateEl.textContent=dayNum+'/'+currentMonth+'/'+currentYear;
+  var events=allSchedules.filter(function(s){return s.date===dateStr;});
+  if(events.length===0){
+    var noMsg=lang==='en'?'No reminders for this day':'Không có nhắc nhở nào';
+    list.innerHTML='<p class="text-muted" style="text-align:center;padding:1rem;font-size:.88rem">'+noMsg+'</p>';
+  }else{
+    var html='';
+    for(var i=0;i<events.length;i++){
+      var e=events[i];
+      var icon=e.type==='medication'?'fa-pills':'fa-stethoscope';
+      var iconCls=e.type==='medication'?'medication':'checkup';
+      html+='<div class="schedule-item" style="margin-bottom:.5rem"><div class="sch-icon '+iconCls+'"><i class="fa-solid '+icon+'"></i></div><div class="sch-info"><strong>'+e.title+'</strong><small>'+(e.time||'')+(e.desc?' — '+e.desc:'')+'</small></div></div>';
+    }
+    list.innerHTML=html;
+  }
+  panel.style.display='block';
+  // Highlight selected day
+  document.querySelectorAll('.cal-day.selected').forEach(function(el){el.classList.remove('selected');});
+  document.querySelectorAll('.cal-day').forEach(function(el){
+    var num=el.querySelector('.day-num');
+    if(num&&num.textContent==String(dayNum)&&!el.classList.contains('other-month'))el.classList.add('selected');
+  });
+}
+
+async function deleteSchedule(id){
+  var lang=localStorage.getItem('lang')||'vi';
+  var msg=lang==='en'?'Delete this event?':'Xóa lịch hẹn này?';
+  if(!confirm(msg))return;await fetch('/schedule/'+id,{method:'DELETE'});location.reload();
+}
+renderCalendar();
+</script>
+{% endblock %}

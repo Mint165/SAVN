@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Tổng Quan — HeartBits{% endblock %}
+{% block body %}
+<!-- TOP NAV -->
+<nav class="top-nav">
+  <a href="/" class="nav-brand"><i class="fa-solid fa-heart-pulse heartbeat-icon"></i> HeartBits</a>
+  <ul class="nav-menu">
+    <li class="active"><a href="/"><i class="fa-solid fa-chart-line"></i> <span data-i18n="nav_dash">Tổng quan</span></a></li>
+    <li><a href="/form"><i class="fa-solid fa-notes-medical"></i> <span data-i18n="nav_entry">Nhập dữ liệu</span></a></li>
+    <li><a href="/exercise"><i class="fa-solid fa-dumbbell"></i> <span data-i18n="nav_ex">Tập luyện</span></a></li>
+    <li><a href="/report"><i class="fa-solid fa-file-medical"></i> <span data-i18n="nav_report">Báo cáo</span></a></li>
+    <li><a href="/schedule"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav_schedule">Lịch</span></a></li>
+    <li><a href="/profile"><i class="fa-solid fa-id-card"></i> <span data-i18n="nav_profile">Hồ sơ</span></a></li>
+  </ul>
+  <div class="nav-right">
+    <div class="icon-btn" onclick="openSettings()" title="Cài đặt"><i class="fa-solid fa-gear"></i></div>
+    <a href="/profile" class="user-avatar" title="{{ user.username }}">{{ user.username[0].upper() }}</a>
+  </div>
+</nav>
+
+<div class="main-content">
+  <div class="page-header">
+    <h1 data-i18n="page_dashboard">Tổng Quan Sức Khỏe</h1>
+    {% if latest_record %}<div class="date-display">{{ latest_record.date.strftime("%d/%m/%Y") }}</div>{% endif %}
+  </div>
+
+  {% if not latest_record %}
+  <div class="empty-state">
+    <i class="fa-solid fa-clipboard-list"></i>
+    <h2 data-i18n="empty_title">Chưa có dữ liệu nào</h2>
+    <p data-i18n="empty_desc">Hãy nhập dữ liệu sức khỏe đầu tiên của bạn để xem phân tích.</p>
+    {% if not user.age %}<p style="margin-top:.5rem;color:var(--warning)"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="profile_incomplete">Bạn chưa hoàn thiện hồ sơ.</span> <a href="/profile" style="color:var(--warning);text-decoration:underline" data-i18n="profile_update">Cập nhật ngay</a></p>{% endif %}
+    <a href="/form" class="btn btn-primary mt-3"><i class="fa-solid fa-plus"></i> <span data-i18n="empty_btn">Nhập Dữ Liệu Ngay</span></a>
+  </div>
+  {% else %}
+
+  {% if latest_record.override_msg %}
+  <div class="alert alert-danger"><i class="fa-solid fa-triangle-exclamation"></i><div>{{ latest_record.override_msg }}</div></div>
+  {% endif %}
+
+  <div class="summary-cards">
+    <div class="card stat-card">
+      <div class="card-icon blood"><i class="fa-solid fa-droplet"></i></div>
+      <div class="card-info"><h3 data-i18n="bp_label">Huyết Áp</h3><div class="value">{{ latest_record.systolic }}<small style="font-size:1rem">/</small>{{ latest_record.diastolic }}</div><small class="text-muted" data-i18n="unit_mmhg">mmHg</small></div>
+    </div>
+    <div class="card stat-card">
+      <div class="card-icon score"><i class="fa-solid fa-droplet-slash"></i></div>
+      <div class="card-info"><h3 data-i18n="glucose_label">Đường Huyết</h3><div class="value">{% if latest_record.avg_glucose_level %}{{ latest_record.avg_glucose_level | round(1) }}{% else %}—{% endif %}</div><small class="text-muted" data-i18n="unit_mgdl">mg/dL</small></div>
+    </div>
+    <div class="card stat-card {% if latest_record.final_score >= 75 %}risk-critical{% elif latest_record.final_score >= 55 %}risk-high{% elif latest_record.final_score >= 35 %}risk-medium{% endif %}">
+      <div class="card-icon heart"><i class="fa-solid fa-heart-crack"></i></div>
+      <div class="card-info"><h3 data-i18n="risk_label">Nguy Cơ Đột Quỵ</h3><div class="value">{{ latest_record.final_score }}<small style="font-size:1rem">%</small></div><small class="text-muted" data-i18n="unit_percent">Điểm tổng hợp</small></div>
+    </div>
+    {% if user.exercise_streak %}
+    <div class="card stat-card">
+      <div class="card-icon streak"><i class="fa-solid fa-fire"></i></div>
+      <div class="card-info"><h3 data-i18n="streak_label">Chuỗi Tập Luyện</h3><div class="value">{{ user.exercise_streak }} 🔥</div><small class="text-muted" data-i18n="unit_days">ngày liên tiếp</small></div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="charts-container">
+    <div class="card chart-card"><h3><i class="fa-solid fa-droplet"></i> <span data-i18n="chart_bp">Biến Động Huyết Áp</span></h3><canvas id="bpChart"></canvas></div>
+    <div class="card chart-card"><h3><i class="fa-solid fa-chart-area"></i> <span data-i18n="chart_risk">Nguy Cơ Đột Quỵ (%)</span></h3><canvas id="riskChart"></canvas></div>
+    <div class="card chart-card"><h3><i class="fa-solid fa-droplet-slash"></i> <span data-i18n="chart_glucose">Đường Huyết (mg/dL)</span></h3><canvas id="glucoseChart"></canvas></div>
+  </div>
+
+  {% if advice_list_vi %}
+  <div class="card advice-card">
+    <h3><i class="fa-solid fa-lightbulb"></i> <span data-i18n="advice_title">Lời Khuyên Cá Nhân</span></h3>
+    <div class="advice-list" data-lang="vi">{% for a in advice_list_vi %}<div class="advice-item">{{ a }}</div>{% endfor %}</div>
+    <div class="advice-list" data-lang="en" style="display:none">{% for a in advice_list_en %}<div class="advice-item">{{ a }}</div>{% endfor %}</div>
+  </div>
+  {% endif %}
+
+  <div class="card map-widget">
+    <h3><i class="fa-solid fa-map-location-dot"></i> <span data-i18n="hospital_title">Bệnh Viện Gần Nhất</span></h3>
+    <a id="mapBtn" href="#" target="_blank" class="map-btn" onclick="openMap(event)">
+      <div class="map-btn-icon">🏥</div>
+      <div class="map-btn-text"><strong data-i18n="hospital_find">Tìm bệnh viện gần tôi</strong><small data-i18n="hospital_desc">Mở Google Maps với vị trí của bạn</small></div>
+      <i class="fa-solid fa-arrow-right" style="margin-left:auto;opacity:.7"></i>
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+var dates={{ dates|safe }};var systolicD={{ systolic|safe }};var diastolicD={{ diastolic|safe }};var strokeScores={{ stroke_scores|safe }};var glucoseD={{ glucose_data|safe }};
+{% if latest_record %}var latestScore={{ latest_record.final_score }};{% else %}var latestScore=0;{% endif %}
+
+// Golden hour: store start time in localStorage for persistence across pages
+if(latestScore >= 75){
+  if(!localStorage.getItem('goldenHourStart')){
+    localStorage.setItem('goldenHourStart', Date.now().toString());
+  }
+} else {
+  localStorage.removeItem('goldenHourStart');
+}
+
+function openMap(e){e.preventDefault();if(navigator.geolocation){navigator.geolocation.getCurrentPosition(function(pos){window.open('https://www.google.com/maps/search/bệnh+viện/@'+pos.coords.latitude+','+pos.coords.longitude+',14z','_blank');},function(){window.open('https://www.google.com/maps/search/bệnh+viện+gần+đây/','_blank');});}else{window.open('https://www.google.com/maps/search/bệnh+viện+gần+đây/','_blank');}}
+</script>
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}

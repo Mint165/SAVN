@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Báo Cáo — HeartBits{% endblock %}
+{% block body %}
+<nav class="top-nav">
+  <a href="/" class="nav-brand"><i class="fa-solid fa-heart-pulse heartbeat-icon"></i> HeartBits</a>
+  <ul class="nav-menu">
+    <li><a href="/"><i class="fa-solid fa-chart-line"></i> <span data-i18n="nav_dash">Tổng quan</span></a></li>
+    <li><a href="/form"><i class="fa-solid fa-notes-medical"></i> <span data-i18n="nav_entry">Nhập dữ liệu</span></a></li>
+    <li><a href="/exercise"><i class="fa-solid fa-dumbbell"></i> <span data-i18n="nav_ex">Tập luyện</span></a></li>
+    <li class="active"><a href="/report"><i class="fa-solid fa-file-medical"></i> <span data-i18n="nav_report">Báo cáo</span></a></li>
+    <li><a href="/schedule"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav_schedule">Lịch</span></a></li>
+    <li><a href="/profile"><i class="fa-solid fa-id-card"></i> <span data-i18n="nav_profile">Hồ sơ</span></a></li>
+  </ul>
+  <div class="nav-right">
+    <div class="icon-btn" onclick="openSettings()"><i class="fa-solid fa-gear"></i></div>
+    <a href="/profile" class="user-avatar">{{ user.username[0].upper() }}</a>
+  </div>
+</nav>
+<div class="main-content">
+  <div class="page-header"><h1 data-i18n="page_report">Báo Cáo Sức Khỏe</h1></div>
+
+  {% if not records %}
+  <div class="empty-state">
+    <i class="fa-solid fa-chart-pie"></i>
+    <h2 data-i18n="report_empty">Chưa có dữ liệu để báo cáo</h2>
+    <p data-i18n="report_empty_desc">Hãy nhập dữ liệu sức khỏe hàng ngày để nhận được báo cáo chi tiết.</p>
+    <a href="/form" class="btn btn-primary mt-3"><i class="fa-solid fa-plus"></i> <span data-i18n="empty_btn">Nhập Dữ Liệu</span></a>
+  </div>
+  {% else %}
+  <div class="report-summary">
+    <div class="card report-metric"><div class="metric-value">{{ avg_systolic }}<small>/{{ avg_diastolic }}</small></div><div class="metric-label" data-i18n="report_avg_bp">Huyết áp TB (mmHg)</div></div>
+    <div class="card report-metric"><div class="metric-value">{{ avg_glucose }}</div><div class="metric-label" data-i18n="report_avg_glucose">Đường huyết TB (mg/dL)</div></div>
+    <div class="card report-metric"><div class="metric-value" style="color:{% if avg_risk >= 75 %}var(--danger){% elif avg_risk >= 35 %}var(--warning){% else %}var(--success){% endif %}">{{ avg_risk }}%</div><div class="metric-label" data-i18n="report_avg_risk">Nguy cơ đột quỵ TB</div></div>
+    <div class="card report-metric"><div class="metric-value">{{ total_records }}</div><div class="metric-label" data-i18n="report_total">Số lần ghi nhận</div></div>
+  </div>
+  <div class="charts-container">
+    <div class="card chart-card"><h3><i class="fa-solid fa-droplet"></i> <span data-i18n="chart_bp">Biến Động Huyết Áp</span></h3><canvas id="reportBpChart"></canvas></div>
+    <div class="card chart-card"><h3><i class="fa-solid fa-chart-area"></i> <span data-i18n="chart_risk">Nguy Cơ Đột Quỵ (%)</span></h3><canvas id="reportRiskChart"></canvas></div>
+  </div>
+
+  <div class="card" style="margin-bottom:2rem">
+    <h3 style="font-weight:700;margin-bottom:1.25rem;color:var(--primary);display:flex;align-items:center;gap:.5rem"><i class="fa-solid fa-stethoscope"></i> <span data-i18n="report_advice_title">Lời Khuyên Sức Khỏe Cá Nhân</span></h3>
+    <!-- Vietnamese advice -->
+    <div data-lang="vi">
+      <div class="advice-category"><h4 data-i18n="report_diet">🍎 Chế Độ Ăn Uống</h4><ul>{% for item in diet_vi %}<li>{{ item }}</li>{% endfor %}</ul></div>
+      <div class="advice-category"><h4 data-i18n="report_rest">😴 Nghỉ Ngơi & Giấc Ngủ</h4><ul>{% for item in rest_vi %}<li>{{ item }}</li>{% endfor %}</ul></div>
+      <div class="advice-category"><h4 data-i18n="report_exercise">🏃 Tập Luyện</h4><ul>{% for item in ex_vi %}<li>{{ item }}</li>{% endfor %}</ul></div>
+      {% if warn_vi %}<div class="advice-category"><h4 data-i18n="report_warnings">⚠️ Cảnh Báo Đặc Biệt</h4><ul>{% for item in warn_vi %}<li style="border-left-color:var(--danger)">{{ item }}</li>{% endfor %}</ul></div>{% endif %}
+    </div>
+    <!-- English advice -->
+    <div data-lang="en" style="display:none">
+      <div class="advice-category"><h4>🍎 Diet</h4><ul>{% for item in diet_en %}<li>{{ item }}</li>{% endfor %}</ul></div>
+      <div class="advice-category"><h4>😴 Rest & Sleep</h4><ul>{% for item in rest_en %}<li>{{ item }}</li>{% endfor %}</ul></div>
+      <div class="advice-category"><h4>🏃 Exercise</h4><ul>{% for item in ex_en %}<li>{{ item }}</li>{% endfor %}</ul></div>
+      {% if warn_en %}<div class="advice-category"><h4>⚠️ Special Warnings</h4><ul>{% for item in warn_en %}<li style="border-left-color:var(--danger)">{{ item }}</li>{% endfor %}</ul></div>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if records %}
+<script>
+var dates={{ dates|safe }},systolicD={{ systolic|safe }},diastolicD={{ diastolic|safe }},riskD={{ risk_scores|safe }};
+var isDark=document.documentElement.getAttribute('data-theme')==='dark';
+var lang=localStorage.getItem('lang')||'vi';
+Chart.defaults.color=isDark?'#94A3B8':'#6B7280';Chart.defaults.font.family="'Inter',sans-serif";
+var gridC=isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)';
+var lblSys=lang==='en'?'Systolic':'Tâm thu', lblDia=lang==='en'?'Diastolic':'Tâm trương', lblRisk=lang==='en'?'Risk (%)':'Nguy cơ (%)';
+var baseOpts={responsive:true,animation:{duration:900,easing:'easeInOutQuart'},plugins:{legend:{position:'bottom',labels:{padding:16,usePointStyle:true}}},scales:{x:{grid:{color:gridC}},y:{grid:{color:gridC}}}};
+function mkGrad(ctx,c1,c2){var g=ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,c1);g.addColorStop(1,c2);return g;}
+var bpCtx=document.getElementById('reportBpChart');if(bpCtx){var bc=bpCtx.getContext('2d');window.reportBpChart=new Chart(bc,{type:'line',data:{labels:dates,datasets:[{label:lblSys,data:systolicD,borderColor:'#EF4444',backgroundColor:mkGrad(bc,'rgba(239,68,68,0.2)','rgba(239,68,68,0)'),fill:true,tension:.4,borderWidth:2.5,pointRadius:4},{label:lblDia,data:diastolicD,borderColor:'#10B981',backgroundColor:mkGrad(bc,'rgba(16,185,129,0.2)','rgba(16,185,129,0)'),fill:true,tension:.4,borderWidth:2.5,pointRadius:4}]},options:Object.assign({},baseOpts,{scales:{x:baseOpts.scales.x,y:Object.assign({},baseOpts.scales.y,{beginAtZero:false})}})});}
+var rCtx=document.getElementById('reportRiskChart');if(rCtx){var rc=rCtx.getContext('2d');window.reportRiskChart=new Chart(rc,{type:'line',data:{labels:dates,datasets:[{label:lblRisk,data:riskD,borderColor:'#F59E0B',backgroundColor:mkGrad(rc,'rgba(245,158,11,0.2)','rgba(245,158,11,0)'),fill:true,tension:.4,borderWidth:2.5,pointRadius:5}]},options:Object.assign({},baseOpts,{scales:{x:baseOpts.scales.x,y:Object.assign({},baseOpts.scales.y,{beginAtZero:true,max:100})}})});}
+window.addEventListener('languageChanged',function(){var l=localStorage.getItem('lang')||'vi';var isEn=l==='en';if(window.reportBpChart){window.reportBpChart.data.datasets[0].label=isEn?'Systolic':'Tâm thu';window.reportBpChart.data.datasets[1].label=isEn?'Diastolic':'Tâm trương';window.reportBpChart.update();}if(window.reportRiskChart){window.reportRiskChart.data.datasets[0].label=isEn?'Risk (%)':'Nguy cơ (%)';window.reportRiskChart.update();}});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>{% block title %}HeartBits{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/static/css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function(){
+  var t=localStorage.getItem('theme')||'system';
+  var dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  if(dark)document.documentElement.setAttribute('data-theme','dark');
+})();
+</script>
+{% block head %}{% endblock %}
+</head>
+<body>
+{% block body %}{% endblock %}
+
+{% if user is defined and user %}
+<!-- Settings Modal -->
+<div id="settingsModal" class="modal-overlay hidden">
+  <div class="modal-content card">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-gear"></i> <span data-i18n="settings_title">Cài Đặt</span></h3>
+      <button class="btn-close" onclick="closeModal('settingsModal')"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <div class="form-group">
+      <label data-i18n="settings_lang">Ngôn ngữ</label>
+      <select id="langSelect" onchange="changeLang(this.value)">
+        <option value="vi">🇻🇳 Tiếng Việt</option>
+        <option value="en">🇬🇧 English</option>
+      </select>
+    </div>
+    <div class="form-group mt-3">
+      <label data-i18n="settings_theme">Giao diện</label>
+      <select id="themeSelect" onchange="changeTheme(this.value)">
+        <option value="system" data-i18n-opt="theme_system">⚙️ Theo hệ thống</option>
+        <option value="dark" data-i18n-opt="theme_dark">🌙 Tối</option>
+        <option value="light" data-i18n-opt="theme_light">☀️ Sáng</option>
+      </select>
+      </div>
+  </div>
+</div>
+
+<!-- MOBILE NAVIGATION -->
+<div class="mobile-top-bar">
+  <div class="mobile-brand"><i class="fa-solid fa-heart-pulse heartbeat-icon"></i> HeartBits</div>
+  <button class="hamburger-btn" onclick="toggleMobileMenu()"><i class="fa-solid fa-bars"></i></button>
+</div>
+
+<div id="mobileMenuOverlay" class="mobile-menu-overlay hidden">
+  <div class="mobile-menu-content">
+    <div class="mobile-menu-header">
+      <div class="mobile-brand"><i class="fa-solid fa-heart-pulse heartbeat-icon"></i> HeartBits</div>
+      <button class="btn-close" onclick="toggleMobileMenu()"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <ul class="mobile-menu-list">
+      <li><a href="/"><i class="fa-solid fa-house"></i> <span data-i18n="nav_dash">Trang chủ</span></a></li>
+      <li><a href="/exercise"><i class="fa-solid fa-trophy"></i> <span data-i18n="nav_ex">Nhiệm vụ</span></a></li>
+      <li><a href="/report"><i class="fa-solid fa-clock-rotate-left"></i> <span data-i18n="nav_report">Lịch sử NV</span></a></li>
+      <li><a href="/form"><i class="fa-solid fa-bag-shopping"></i> <span>Cửa hàng</span></a></li>
+      <li><a href="/profile"><i class="fa-regular fa-comment-dots"></i> <span>Ami</span></a></li>
+      <li><a href="/schedule"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav_schedule">Nhật ký</span></a></li>
+      <li><a href="#" onclick="openSettings(); toggleMobileMenu();"><i class="fa-solid fa-gear"></i> <span data-i18n="settings_title">Cài đặt</span></a></li>
+      <li><a href="/logout" style="color: var(--danger);"><i class="fa-solid fa-arrow-right-from-bracket"></i> Đăng xuất</a></li>
+    </ul>
+  </div>
+</div>
+
+<div class="mobile-bottom-nav">
+  <a href="/" class="mb-nav-item"><i class="fa-solid fa-music"></i><span>Trang chủ</span></a>
+  <a href="/exercise" class="mb-nav-item"><i class="fa-solid fa-trophy"></i><span>Nhiệm vụ</span></a>
+  <a href="/report" class="mb-nav-item"><i class="fa-solid fa-clock-rotate-left"></i><span>Lịch sử NV</span></a>
+  <a href="/form" class="mb-nav-item"><i class="fa-solid fa-bag-shopping"></i><span>Cửa hàng</span></a>
+  <a href="/profile" class="mb-nav-item"><i class="fa-regular fa-comment-dots"></i><span>Ami</span></a>
+</div>
+
+<!-- GOLDEN HOUR (global, persistent across all pages) -->
+<div id="golden-hour-overlay" class="hidden"></div>
+<div id="golden-hour-timer" class="hidden">
+  <svg class="progress-ring" width="120" height="120"><circle class="progress-ring__circle" stroke="#EF4444" stroke-width="8" fill="transparent" r="52" cx="60" cy="60"/></svg>
+  <div class="timer-text"><div class="timer-title" data-i18n="golden_hour">GIỜ VÀNG</div><div id="timer-countdown">03:00:00</div></div>
+</div>
+{% endif %}
+
+<!-- GLOBAL I18N + Theme JS (available on ALL pages including login) -->
+<script>
+var I18N={
+  vi:{
+    nav_dash:"Tổng quan",nav_entry:"Nhập dữ liệu",nav_ex:"Tập luyện",nav_report:"Báo cáo",nav_schedule:"Lịch",nav_profile:"Hồ sơ",
+    settings_title:"Cài Đặt",settings_lang:"Ngôn ngữ",settings_theme:"Giao diện",
+    theme_system:"⚙️ Theo hệ thống",theme_dark:"🌙 Tối",theme_light:"☀️ Sáng",
+    page_dashboard:"Tổng Quan Sức Khỏe",page_form:"Nhập Dữ Liệu Hôm Nay",page_exercise:"Tập Luyện Hàng Ngày",
+    page_report:"Báo Cáo Sức Khỏe",page_schedule:"Lịch Nhắc Nhở",page_profile:"Hồ Sơ Cá Nhân",
+    bp_label:"Huyết Áp",glucose_label:"Đường Huyết",risk_label:"Nguy Cơ Đột Quỵ",streak_label:"Chuỗi Tập Luyện",
+    unit_mmhg:"mmHg",unit_mgdl:"mg/dL",unit_percent:"Điểm tổng hợp",unit_days:"ngày liên tiếp",
+    chart_bp:"Biến Động Huyết Áp",chart_risk:"Nguy Cơ Đột Quỵ (%)",chart_glucose:"Đường Huyết (mg/dL)",
+    chart_systolic:"Tâm thu",chart_diastolic:"Tâm trương",chart_risk_pct:"Nguy cơ (%)",chart_glucose_mgdl:"Đường huyết (mg/dL)",
+    advice_title:"Lời Khuyên Cá Nhân",hospital_title:"Bệnh Viện Gần Nhất",hospital_find:"Tìm bệnh viện gần tôi",hospital_desc:"Mở Google Maps với vị trí của bạn",
+    empty_title:"Chưa có dữ liệu nào",empty_desc:"Hãy nhập dữ liệu sức khỏe đầu tiên của bạn để xem phân tích.",empty_btn:"Nhập Dữ Liệu Ngay",
+    profile_incomplete:"Bạn chưa hoàn thiện hồ sơ.",profile_update:"Cập nhật ngay",
+    exercise_banner_done:"Đã hoàn thành hôm nay",exercise_banner_streak:"Ngày tập luyện liên tiếp",
+    exercise_info_title:"Bài Tập Dành Cho Người Cao Tuổi",exercise_info_desc:"Các bài tập được thiết kế nhẹ nhàng, an toàn, phù hợp với mọi thể trạng. Tập đều đặn mỗi ngày giúp giảm 27% nguy cơ đột quỵ.",
+    exercise_done_msg:"Đã hoàn thành tất cả bài tập hôm nay? Nhấn để ghi nhận!",exercise_done_btn:"Tôi Đã Tập Luyện Hôm Nay!",exercise_done_already:"Đã tập luyện hôm nay!",exercise_comeback:"Hãy quay lại vào ngày mai để giữ chuỗi 🔥",
+    form_date:"Ngày Ghi Nhận",form_vitals:"Chỉ Số Sinh Tồn",form_systolic:"Huyết áp tâm thu",form_diastolic:"Huyết áp tâm trương",form_glucose:"Đường huyết",form_glucose_hint:"Tùy chọn — nếu bỏ trống, AI sẽ dự đoán dựa trên các chỉ số khác",
+    form_fast:"Triệu Chứng FAST",form_fast_desc:"Đánh giá từng triệu chứng theo mức độ bạn cảm nhận ngay lúc này.",form_submit:"Phân Tích & Dự Đoán Nguy Cơ",
+    fast_none:"Không",fast_mild:"Nhẹ",fast_clear:"Rõ",fast_severe:"Nặng",
+    fast_f_label:"F — Khuôn Mặt",fast_f_hint:"Méo miệng, mất cân đối khi cười",
+    fast_a_label:"A — Cánh Tay",fast_a_hint:"Yếu tay, không nâng được hoặc run",
+    fast_s_label:"S — Giọng Nói",fast_s_hint:"Nói lắp, khó phát âm, lú lẫn",
+    fast_t_label:"T — Thời Gian",fast_t_hint:"Mất ý thức về thời gian, mất phương hướng",
+    schedule_add:"Thêm lịch",schedule_upcoming:"Lịch hẹn sắp tới",schedule_empty:"Chưa có lịch hẹn nào.",schedule_empty_hint:"Nhấn \"Thêm lịch\" để tạo mới.",
+    schedule_type:"Loại lịch",schedule_med:"💊 Uống thuốc",schedule_checkup:"🏥 Khám sức khỏe",schedule_title_label:"Tiêu đề",schedule_desc:"Mô tả (tùy chọn)",schedule_date:"Ngày",schedule_time:"Giờ (tùy chọn)",schedule_add_btn:"Thêm Lịch",schedule_day_detail:"Nhắc nhở ngày",schedule_no_events:"Không có nhắc nhở nào",
+    report_empty:"Chưa có dữ liệu để báo cáo",report_empty_desc:"Hãy nhập dữ liệu sức khỏe hàng ngày để nhận được báo cáo chi tiết.",
+    report_avg_bp:"Huyết áp TB (mmHg)",report_avg_glucose:"Đường huyết TB (mg/dL)",report_avg_risk:"Nguy cơ đột quỵ TB",report_total:"Số lần ghi nhận",
+    report_advice_title:"Lời Khuyên Sức Khỏe Cá Nhân",report_diet:"🍎 Chế Độ Ăn Uống",report_rest:"😴 Nghỉ Ngơi & Giấc Ngủ",report_exercise:"🏃 Tập Luyện",report_warnings:"⚠️ Cảnh Báo Đặc Biệt",
+    profile_info:"Thông Tin Hồ Sơ",profile_edit:"Chỉnh Sửa Hồ Sơ",profile_age:"Tuổi",profile_gender:"Giới tính",profile_bmi:"Chỉ số BMI",profile_smoking:"Hút thuốc",profile_heart:"Tiền sử bệnh tim",profile_hypertension:"Tiền sử huyết áp cao",profile_save:"Lưu Thay Đổi",profile_history:"Lịch Sử Gần Đây",profile_logout:"Đăng Xuất",
+    profile_work:"Nghề nghiệp",profile_work_business:"Kinh doanh",profile_work_civil:"Công chức",profile_work_doctor:"Bác sĩ",profile_work_teacher:"Giáo viên",profile_work_other:"Khác",profile_work_other_ph:"Nhập nghề nghiệp của bạn",
+    profile_smoking_never:"Chưa từng hút",profile_smoking_former:"Đã bỏ thuốc",profile_smoking_current:"Đang hút",profile_smoking_unknown:"Không rõ",
+    profile_gender_male:"Nam",profile_gender_female:"Nữ",profile_gender_other:"Khác",
+    profile_yes:"Có",profile_no:"Không",
+    profile_setup_alert:"Hoàn thiện hồ sơ trước khi nhập dữ liệu!",profile_setup_desc:"Thông tin của bạn giúp hệ thống AI dự đoán chính xác hơn.",
+    th_date:"Ngày",th_bp:"Huyết áp",th_glucose:"Đường huyết",th_risk:"Nguy cơ",
+    login_title:"Đăng Nhập",register_title:"Đăng Ký",login_username:"Tên đăng nhập",login_password:"Mật khẩu",login_btn:"Đăng Nhập",register_btn:"Tạo Tài Khoản",
+    login_subtitle:"Theo dõi sức khỏe — Dự đoán rủi ro đột quỵ",
+    login_user_ph:"Nhập tên tài khoản",login_pass_ph:"Nhập mật khẩu",reg_user_ph:"Chọn tên tài khoản",reg_pass_ph:"Tối thiểu 6 ký tự",
+    reg_health_title:"Hồ Sơ Sức Khỏe",reg_bmi_title:"Chỉ Số BMI",reg_bmi_direct:"Nhập trực tiếp",reg_bmi_calc:"Tính từ chiều cao/cân nặng",reg_bmi_label:"Chỉ số BMI",reg_height:"Chiều cao (cm)",reg_weight:"Cân nặng (kg)",reg_bmi_auto:"BMI (tự động tính)",
+    golden_hour:"GIỜ VÀNG",
+    delete_confirm:"Xóa lịch hẹn này?"
+  },
+  en:{
+    nav_dash:"Dashboard",nav_entry:"Daily Entry",nav_ex:"Exercise",nav_report:"Report",nav_schedule:"Schedule",nav_profile:"Profile",
+    settings_title:"Settings",settings_lang:"Language",settings_theme:"Theme",
+    theme_system:"⚙️ System",theme_dark:"🌙 Dark",theme_light:"☀️ Light",
+    page_dashboard:"Health Overview",page_form:"Daily Health Entry",page_exercise:"Daily Exercise",
+    page_report:"Health Report",page_schedule:"Reminders",page_profile:"My Profile",
+    bp_label:"Blood Pressure",glucose_label:"Blood Glucose",risk_label:"Stroke Risk",streak_label:"Exercise Streak",
+    unit_mmhg:"mmHg",unit_mgdl:"mg/dL",unit_percent:"Combined score",unit_days:"consecutive days",
+    chart_bp:"Blood Pressure Trend",chart_risk:"Stroke Risk (%)",chart_glucose:"Blood Glucose (mg/dL)",
+    chart_systolic:"Systolic",chart_diastolic:"Diastolic",chart_risk_pct:"Risk (%)",chart_glucose_mgdl:"Blood Glucose (mg/dL)",
+    advice_title:"Personal Advice",hospital_title:"Nearest Hospital",hospital_find:"Find nearby hospitals",hospital_desc:"Open Google Maps with your location",
+    empty_title:"No data yet",empty_desc:"Enter your first health data to see the analysis.",empty_btn:"Enter Data Now",
+    profile_incomplete:"Your profile is incomplete.",profile_update:"Update now",
+    exercise_banner_done:"Completed today",exercise_banner_streak:"Consecutive exercise days",
+    exercise_info_title:"Exercises for Seniors",exercise_info_desc:"Gentle, safe exercises for all fitness levels. Regular daily exercise can reduce stroke risk by 27%.",
+    exercise_done_msg:"Completed all exercises today? Tap to record!",exercise_done_btn:"I Exercised Today!",exercise_done_already:"Already exercised today!",exercise_comeback:"Come back tomorrow to keep the streak 🔥",
+    form_date:"Record Date",form_vitals:"Vital Signs",form_systolic:"Systolic BP",form_diastolic:"Diastolic BP",form_glucose:"Blood Glucose",form_glucose_hint:"Optional — if left blank, AI will predict based on other metrics",
+    form_fast:"FAST Symptoms",form_fast_desc:"Rate each symptom based on how you feel right now.",form_submit:"Analyze & Predict Risk",
+    fast_none:"None",fast_mild:"Mild",fast_clear:"Clear",fast_severe:"Severe",
+    fast_f_label:"F — Face",fast_f_hint:"Drooping, uneven smile",
+    fast_a_label:"A — Arms",fast_a_hint:"Weakness, unable to lift or trembling",
+    fast_s_label:"S — Speech",fast_s_hint:"Slurred words, difficulty speaking",
+    fast_t_label:"T — Time",fast_t_hint:"Loss of time awareness, disorientation",
+    schedule_add:"Add event",schedule_upcoming:"Upcoming events",schedule_empty:"No upcoming events.",schedule_empty_hint:"Tap \"Add event\" to create one.",
+    schedule_type:"Event type",schedule_med:"💊 Medication",schedule_checkup:"🏥 Check-up",schedule_title_label:"Title",schedule_desc:"Description (optional)",schedule_date:"Date",schedule_time:"Time (optional)",schedule_add_btn:"Add Event",schedule_day_detail:"Reminders for",schedule_no_events:"No reminders",
+    report_empty:"No data for report",report_empty_desc:"Enter daily health data to receive a detailed report.",
+    report_avg_bp:"Average BP (mmHg)",report_avg_glucose:"Average Glucose (mg/dL)",report_avg_risk:"Average Stroke Risk",report_total:"Total Entries",
+    report_advice_title:"Personalized Health Advice",report_diet:"🍎 Diet",report_rest:"😴 Rest & Sleep",report_exercise:"🏃 Exercise",report_warnings:"⚠️ Special Warnings",
+    profile_info:"Profile Info",profile_edit:"Edit Profile",profile_age:"Age",profile_gender:"Gender",profile_bmi:"BMI",profile_smoking:"Smoking",profile_heart:"Heart Disease History",profile_hypertension:"Hypertension History",profile_save:"Save Changes",profile_history:"Recent History",profile_logout:"Log Out",
+    profile_work:"Occupation",profile_work_business:"Business",profile_work_civil:"Civil Servant",profile_work_doctor:"Doctor",profile_work_teacher:"Teacher",profile_work_other:"Other",profile_work_other_ph:"Enter your occupation",
+    profile_smoking_never:"Never smoked",profile_smoking_former:"Formerly smoked",profile_smoking_current:"Currently smoking",profile_smoking_unknown:"Unknown",
+    profile_gender_male:"Male",profile_gender_female:"Female",profile_gender_other:"Other",
+    profile_yes:"Yes",profile_no:"No",
+    profile_setup_alert:"Complete your profile before entering data!",profile_setup_desc:"Your information helps the AI predict more accurately.",
+    th_date:"Date",th_bp:"Blood Pressure",th_glucose:"Glucose",th_risk:"Risk",
+    login_title:"Log In",register_title:"Sign Up",login_username:"Username",login_password:"Password",login_btn:"Log In",register_btn:"Create Account",
+    login_subtitle:"Health monitoring — Stroke risk prediction",
+    login_user_ph:"Enter your username",login_pass_ph:"Enter your password",reg_user_ph:"Choose a username",reg_pass_ph:"Minimum 6 characters",
+    reg_health_title:"Health Profile",reg_bmi_title:"BMI Index",reg_bmi_direct:"Enter directly",reg_bmi_calc:"Calculate from height/weight",reg_bmi_label:"BMI value",reg_height:"Height (cm)",reg_weight:"Weight (kg)",reg_bmi_auto:"BMI (auto-calculated)",
+    golden_hour:"GOLDEN HOUR",
+    delete_confirm:"Delete this event?"
+  }
+};
+function changeLang(l){
+  localStorage.setItem('lang',l);
+  var d=I18N[l]||I18N.vi;
+  document.querySelectorAll('[data-i18n]').forEach(function(el){var k=el.getAttribute('data-i18n');if(d[k])el.textContent=d[k];});
+  document.querySelectorAll('[data-i18n-opt]').forEach(function(el){var k=el.getAttribute('data-i18n-opt');if(d[k])el.textContent=d[k];});
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){var k=el.getAttribute('data-i18n-placeholder');if(d[k])el.placeholder=d[k];});
+  document.querySelectorAll('[data-i18n-html]').forEach(function(el){var k=el.getAttribute('data-i18n-html');if(d[k])el.innerHTML=d[k];});
+  // Toggle bilingual content blocks
+  document.querySelectorAll('[data-lang]').forEach(function(el){
+    el.style.display=(el.getAttribute('data-lang')===l)?'':'none';
+  });
+  document.documentElement.lang=l==='en'?'en':'vi';
+  window.dispatchEvent(new Event('languageChanged'));
+}
+function changeTheme(t){
+  localStorage.setItem('theme',t);
+  var dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  if(dark)document.documentElement.setAttribute('data-theme','dark');
+  else document.documentElement.removeAttribute('data-theme');
+}
+function openSettings(){
+  document.getElementById('settingsModal').classList.remove('hidden');
+  var ts=document.getElementById('themeSelect');if(ts)ts.value=localStorage.getItem('theme')||'system';
+  var ls=document.getElementById('langSelect');if(ls)ls.value=localStorage.getItem('lang')||'vi';
+}
+function closeModal(id){document.getElementById(id).classList.add('hidden');}
+function toggleMobileMenu(){
+  var menu = document.getElementById('mobileMenuOverlay');
+  if(menu) menu.classList.toggle('hidden');
+}
+
+
+// ─── GLOBAL GOLDEN HOUR INIT ─────────────────────────────────
+function initGoldenHour(){
+  var startStr=localStorage.getItem('goldenHourStart');
+  if(!startStr)return;
+  var startTime=parseInt(startStr,10);
+  var elapsed=Math.floor((Date.now()-startTime)/1000);
+  var total=3*3600;
+  if(elapsed>=total){localStorage.removeItem('goldenHourStart');return;}
+
+  var overlay=document.getElementById('golden-hour-overlay');
+  var timer=document.getElementById('golden-hour-timer');
+  if(!overlay||!timer)return;
+
+  var circle=document.querySelector('.progress-ring__circle');
+  var r=circle.r.baseVal.value;
+  var circ=2*Math.PI*r;
+  circle.style.strokeDasharray=circ+' '+circ;
+
+  var countEl=document.getElementById('timer-countdown');
+  var timeLeft=total-elapsed;
+
+  function tick(){
+    if(timeLeft<0){localStorage.removeItem('goldenHourStart');timer.classList.add('hidden');return;}
+    var h=Math.floor(timeLeft/3600),m=Math.floor((timeLeft%3600)/60),s=timeLeft%60;
+    countEl.textContent=[h,m,s].map(function(v){return String(v).padStart(2,'0');}).join(':');
+    circle.style.strokeDashoffset=circ-(timeLeft/total)*circ;
+    timeLeft--;
+  }
+
+  // If first visit (just triggered), show overlay briefly
+  if(!sessionStorage.getItem('goldenHourShown_' + startTime)){
+    sessionStorage.setItem('goldenHourShown_' + startTime, '1');
+    overlay.classList.remove('hidden');
+    timer.classList.remove('hidden');
+    tick();
+    setInterval(tick,1000);
+    setTimeout(function(){
+      overlay.style.opacity='0';
+      timer.classList.add('minimized');
+      setTimeout(function(){overlay.classList.add('hidden');},1000);
+    },4000);
+  } else {
+    // Resumed from another page — show minimized directly
+    timer.classList.remove('hidden');
+    timer.classList.add('minimized');
+    tick();
+    setInterval(tick,1000);
+  }
+
+  // Draggable
+  var drag=false,ox=0,oy=0,cx=0,cy=0;
+  timer.addEventListener('mousedown',function(e){
+    if(!timer.classList.contains('minimized'))return;
+    drag=true;ox=e.clientX-cx;oy=e.clientY-cy;timer.style.transition='none';
+  });
+  document.addEventListener('mousemove',function(e){
+    if(!drag)return;cx=e.clientX-ox;cy=e.clientY-oy;
+    timer.style.transform='translate('+cx+'px,'+cy+'px) scale(0.7)';
+  });
+  document.addEventListener('mouseup',function(){drag=false;timer.style.transition='';});
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  changeLang(localStorage.getItem('lang')||'vi');
+  initGoldenHour();
+});
+</script>
+</body>
+</html>
