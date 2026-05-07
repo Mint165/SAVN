@@ -126,6 +126,38 @@
     <div class="card chart-card"><h3><i class="fa-solid fa-droplet-slash"></i> <span data-i18n="chart_glucose">Đường Huyết (mg/dL)</span></h3><canvas id="glucoseChart"></canvas></div>
   </div>
 
+  {% if latest_record.xai_data %}
+  {% set xai = latest_record.xai_data | from_json %}
+  <div class="xai-container" id="xaiAccordion">
+    <div class="xai-header" onclick="toggleXAI()">
+      <h4><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="xai_title">Phân tích chi tiết đóng góp từng yếu tố (XAI)</span></h4>
+      <i class="fa-solid fa-chevron-down xai-chevron"></i>
+    </div>
+    <div class="xai-content">
+      <p class="xai-description" data-i18n="xai_desc">Biểu đồ dưới đây cho thấy các nhóm yếu tố đóng góp bao nhiêu vào kết quả dự đoán của bạn.</p>
+      
+      <!-- FAST Section -->
+      <div class="xai-group-title"><i class="fa-solid fa-stethoscope"></i> <span data-i18n="xai_fast_title">Triệu chứng FAST — Y khoa (60%)</span></div>
+      {% for name, val in xai.fast.items() %}
+      <div class="xai-factor-item">
+        <div class="xai-factor-label"><span>{{ name }}</span> <strong>{{ val }}</strong></div>
+        <div class="xai-factor-bar-bg"><div class="xai-factor-bar-fill bar-fast" style="width: {{ val }}%"></div></div>
+      </div>
+      {% endfor %}
+
+      <!-- ML Section -->
+      <div class="xai-group-title"><i class="fa-solid fa-microchip"></i> <span data-i18n="xai_ml_title">Yếu tố nền — Mô hình AI (40%)</span></div>
+      {% for name, val in xai.ml.items() %}
+      {% set scaled_val = (val * 10) | round(0) %}
+      <div class="xai-factor-item">
+        <div class="xai-factor-label"><span>{{ name }}</span> <strong>{{ val }}</strong></div>
+        <div class="xai-factor-bar-bg"><div class="xai-factor-bar-fill bar-ml" style="width: {{ [scaled_val, 100] | min }}%"></div></div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   {% if advice_list_vi %}
   <div class="card advice-card">
     <h3><i class="fa-solid fa-lightbulb"></i> <span data-i18n="advice_title">Lời Khuyên Cá Nhân</span></h3>
@@ -308,6 +340,11 @@ function startVoiceTest(){
       document.getElementById('aiEmergencyAlert').classList.remove('hidden');
     }
   });
+}
+
+function toggleXAI(){
+  var acc = document.getElementById('xaiAccordion');
+  if(acc) acc.classList.toggle('open');
 }
 
 // Override triggerEmergency to also show the alert inside the modal

@@ -68,9 +68,10 @@ class HealthRecord(Base):
     fast_sum = Column(Integer)
     combined_score = Column(Integer)
     final_score = Column(Integer)
-    override_msg = Column(String, nullable=True)
-    advice = Column(String, nullable=True)
-
+    override_msg = Column(Text, nullable=True)
+    advice = Column(Text, nullable=True)
+    xai_data = Column(Text, nullable=True) # JSON string of factor contributions
+    
     owner = relationship("User", back_populates="records")
 
 

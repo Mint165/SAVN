@@ -556,6 +556,27 @@ a{text-decoration:none;color:inherit}
 ::-webkit-scrollbar-thumb{background:rgba(16,185,129,.2);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:var(--primary)}
 
+/* XAI (Explainable AI) Styles */
+.xai-container { margin-top: 1rem; border-radius: 0.75rem; border: 1px solid var(--border); overflow: hidden; background: var(--bg-card); }
+.xai-header { padding: 1rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 0.2s; background: rgba(139, 92, 246, 0.05); }
+.xai-header:hover { background: rgba(139, 92, 246, 0.1); }
+.xai-header h4 { margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 0.5rem; }
+.xai-content { padding: 0; max-height: 0; overflow: hidden; transition: all 0.3s ease-out; background: var(--bg-card); }
+.xai-container.open .xai-content { padding: 1.25rem; max-height: 2000px; }
+.xai-container.open .xai-chevron { transform: rotate(180deg); }
+.xai-description { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.5; }
+.xai-group-title { font-size: 0.9rem; font-weight: 700; margin: 1.5rem 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); color: var(--text-main); }
+.xai-group-title:first-child { margin-top: 0; }
+.xai-factor-item { margin-bottom: 0.75rem; }
+.xai-factor-label { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.35rem; }
+.xai-factor-bar-bg { height: 8px; background: var(--bg-app); border-radius: 4px; overflow: hidden; }
+.xai-factor-bar-fill { height: 100%; border-radius: 4px; transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* Color classes for XAI bars */
+.bar-fast { background: var(--danger); }
+.bar-ml { background: var(--primary); }
+.bar-gray { background: #94A3B8; }
+
 /* RESPONSIVE */
 @media(max-width:1200px){
   .charts-container{grid-template-columns:1fr}

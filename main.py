@@ -46,7 +46,15 @@ if not os.path.exists(templates_path):
     os.makedirs(templates_path, exist_ok=True)
 
 app.mount("/static", StaticFiles(directory=static_path), name="static")
-templates = Jinja2Templates(directory=templates_path)
+templates = Jinja2Templates(directory="templates")
+
+def from_json_filter(value):
+    try:
+        return json.loads(value)
+    except:
+        return {}
+
+templates.env.filters['from_json'] = from_json_filter
 
 # --- Exercises Data ---
 EXERCISES = [
