@@ -151,9 +151,10 @@ var dates={{ dates|safe }};var systolicD={{ systolic|safe }};var diastolicD={{ d
 
 // Golden hour logic is now handled globally in base.html using backend data
 </script>
-<script src="/static/js/dashboard.js"></script>
+<!-- MediaPipe Preloads -->
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" as="script">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" as="script">
 
-<!-- MediaPipe Dependencies (loaded lazily) -->
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -173,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function(){
        HBVision.init(videoEl, canvasEl, null); // Warm up
        _aiInitialized = true;
     }
-  }, 1000); 
+  }, 100); // Trigger almost immediately after DOM ready
 });
 
 function openSettings(){

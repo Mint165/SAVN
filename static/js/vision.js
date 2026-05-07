@@ -75,6 +75,13 @@ var HBVision = (function(){
       width: 480,
       height: 360
     });
+
+    // PRO-TIP: Send a dummy canvas to the model immediately to trigger WASM loading & compilation
+    try {
+      var dummyCanvas = document.createElement('canvas');
+      dummyCanvas.width = 10; dummyCanvas.height = 10;
+      faceMesh.send({image: dummyCanvas});
+    } catch(e) {}
   }
 
   function start(videoEl, canvasEl){
