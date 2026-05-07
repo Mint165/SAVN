@@ -527,8 +527,11 @@ async def report_get(request: Request, db: Session = Depends(get_db)):
         warn_vi.append("Nguy cơ đột quỵ CAO — nên đặt lịch khám bác sĩ trong tuần này.")
         warn_en.append("HIGH stroke risk — schedule a doctor's appointment this week.")
     
+    latest_record = records[-1] if records else None
+
     return templates.TemplateResponse(request=request, name="report.html", context={
         "user": user, "records": records,
+        "latest_record": latest_record,
         "dates": json.dumps(dates),
         "systolic": json.dumps(systolic_data),
         "diastolic": json.dumps(diastolic_data),
