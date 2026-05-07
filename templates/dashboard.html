@@ -149,6 +149,42 @@
 var dates={{ dates|safe }};var systolicD={{ systolic|safe }};var diastolicD={{ diastolic|safe }};var strokeScores={{ stroke_scores|safe }};var glucoseD={{ glucose_data|safe }};
 {% if latest_record %}var latestScore={{ latest_record.final_score }};{% else %}var latestScore=0;{% endif %}
 
+// ─── Chart.js Init ────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function(){
+  var ctxBP = document.getElementById('bpChart').getContext('2d');
+  new Chart(ctxBP, {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [
+        { label: 'Systolic', data: systolicD, borderColor: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.4 },
+        { label: 'Diastolic', data: diastolicD, borderColor: '#3B82F6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.4 }
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false } } }
+  });
+
+  var ctxRisk = document.getElementById('riskChart').getContext('2d');
+  new Chart(ctxRisk, {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [{ label: 'Risk %', data: strokeScores, borderColor: '#8B5CF6', backgroundColor: 'rgba(139, 92, 246, 0.1)', fill: true, tension: 0.4 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100 } } }
+  });
+
+  var ctxGl = document.getElementById('glucoseChart').getContext('2d');
+  new Chart(ctxGl, {
+    type: 'bar',
+    data: {
+      labels: dates,
+      datasets: [{ label: 'Glucose', data: glucoseD, backgroundColor: '#10B981', borderRadius: 6 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } } }
+  });
+});
+
 // Golden hour logic is now handled globally in base.html using backend data
 </script>
 <!-- MediaPipe Preloads -->
