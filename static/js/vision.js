@@ -10,7 +10,10 @@ var HBVision = (function(){
   var ALERT_THRESHOLD = 15;   // % asymmetry to flag
   var ALERT_DURATION = 30;    // ~3 seconds at 10fps
 
+  var _statusCallback = null;
+
   function init(videoEl, canvasEl, statusCallback){
+    _statusCallback = statusCallback;
     var ctx = canvasEl.getContext('2d');
 
     faceMesh = new FaceMesh({locateFile: function(file){
@@ -58,12 +61,15 @@ var HBVision = (function(){
         }
 
         var isAlert = alertCounter >= ALERT_DURATION;
-        if(statusCallback) statusCallback(score, isAlert);
+        if(_statusCallback) _statusCallback(score, isAlert);
 
         if(isAlert && typeof window.triggerEmergency === 'function'){
           window.triggerEmergency('face');
           alertCounter = 0; // Reset to prevent re-fire
         }
+      } else {
+        // Still call callback with 0 score to hide loading screen even if no face
+        if(_statusCallback) _statusCallback(0, false);
       }
       ctx.restore();
     });
@@ -99,5 +105,9 @@ var HBVision = (function(){
     if(camera) camera.stop();
   }
 
-  return { init: init, start: start, stop: stop };
+  function setCallback(cb){
+    _statusCallback = cb;
+  }
+
+  return { init: init, start: start, stop: stop, setCallback: setCallback };
 })();

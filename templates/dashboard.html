@@ -231,9 +231,10 @@ function startFaceScan(){
   var canvasEl = document.getElementById('aiCanvas');
   var loading = document.getElementById('aiLoading');
 
-  if(!_aiInitialized && typeof HBVision !== 'undefined'){
-    HBVision.init(videoEl, canvasEl, function(score, isAlert){
-      loading.style.display = 'none';
+  if(typeof HBVision !== 'undefined'){
+    // Always update/set the callback to handle UI
+    HBVision.setCallback(function(score, isAlert){
+      loading.style.display = 'none'; // Hide loading immediately on first data
       document.getElementById('aiFaceScore').textContent = score + '%';
       var bar = document.getElementById('aiFaceBar');
       bar.style.width = score + '%';
@@ -254,9 +255,13 @@ function startFaceScan(){
         document.getElementById('aiEmergencyAlert').classList.remove('hidden');
       }
     });
-    _aiInitialized = true;
+
+    if(!_aiInitialized){
+      HBVision.init(videoEl, canvasEl);
+      _aiInitialized = true;
+    }
+    HBVision.start(videoEl, canvasEl);
   }
-  if(typeof HBVision !== 'undefined') HBVision.start(videoEl, canvasEl);
 }
 
 function startVoiceTest(){
