@@ -116,25 +116,29 @@ def compute_risk_summary(
     ml_score = int(ml_probability * 100)
     fast_sum = calc_fast_points_v2(fast_f, fast_a, fast_s, fast_t)
 
-    # Weighted combination
-    base_score = int(ml_score * 0.55 + fast_sum * 0.45)
+    # 60/40 Weighted combination as requested by user's reference
+    # ML contributes 40%, FAST contributes 60%
+    weighted_ml = ml_score * 0.4
+    weighted_fast = (fast_sum / 100) * 60  # Scale fast_sum to be out of 60
+    
+    base_score = int(weighted_ml + weighted_fast)
 
-    # Blood pressure modifier
+    # Physical modifiers (Bonuses) - increased for better accuracy
     bp_bonus = 0
     if systolic >= 180 or diastolic >= 120:
-        bp_bonus = 10  # Hypertensive crisis
-    elif systolic >= 160 or diastolic >= 100:
-        bp_bonus = 5
+        bp_bonus = 15  # Hypertensive crisis
+    elif systolic >= 140 or diastolic >= 90:
+        bp_bonus = 8
+    elif systolic >= 130 or diastolic >= 80:
+        bp_bonus = 4
 
-    # Glucose modifier
     glucose_bonus = 0
     if avg_glucose is not None:
         if avg_glucose > 200:
-            glucose_bonus = 5
+            glucose_bonus = 10
         elif avg_glucose > 140:
-            glucose_bonus = 2
+            glucose_bonus = 5
 
-    # Age modifier
     age_bonus = 5 if age >= 70 else (3 if age >= 60 else 0)
 
     combined_score = base_score + bp_bonus + glucose_bonus + age_bonus
@@ -143,26 +147,18 @@ def compute_risk_summary(
 
     # Hard overrides for severe FAST
     max_fast = max(fast_f, fast_a, fast_s, fast_t)
-    severe_count = sum(1 for v in [fast_f, fast_a, fast_s, fast_t] if v == FAST_LEVEL_SEVERE)
-    clear_or_above_count = sum(1 for v in [fast_f, fast_a, fast_s, fast_t] if v >= FAST_LEVEL_CLEAR)
-
-    if max_fast == FAST_LEVEL_SEVERE or severe_count >= 1:
+    if max_fast == FAST_LEVEL_SEVERE:
         final_score = 99
         override_msg = (
             "⚠️ CẢNH BÁO KHẨN CẤP: Triệu chứng NẶNG được phát hiện — "
-            "đây là dấu hiệu đột quỵ cực kỳ nguy hiểm.\n"
             "GỌI CẤP CỨU 115 NGAY LẬP TỨC!"
-        )
-    elif clear_or_above_count >= 2 and final_score < 80:
-        final_score = 80
-        override_msg = (
-            "⚠️ Lưu ý: Có từ 2 triệu chứng FAST ở mức RÕ trở lên — "
-            "điểm nguy cơ được điều chỉnh lên tối thiểu 80 để đảm bảo an toàn."
         )
 
     return {
         "ml_score": ml_score,
         "fast_sum": fast_sum,
+        "weighted_ml": round(weighted_ml, 1),
+        "weighted_fast": round(weighted_fast, 1),
         "combined_score": combined_score,
         "final_score": final_score,
         "override_msg": override_msg,

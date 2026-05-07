@@ -379,6 +379,34 @@ async def form_post(
         models.HealthRecord.date == record_date_obj
     ).first()
     
+    # Prepare XAI Data
+    ml_model, ml_meta = get_ml_resources()
+    xai_factors = {}
+    if ml_model and ml_meta:
+        feature_df = stroke_logic.build_feature_row(
+            user.age, user.gender, user.work_type, user.smoking_status,
+            user.hypertension_history or 0, user.heart_disease or 0,
+            parsed_glucose, user.bmi, ml_meta["feature_names"]
+        )
+        xai_factors = stroke_logic.calc_xai_groups(feature_df, ml_meta)
+    
+    fast_breakdown = {
+        "Méo miệng (F)": stroke_logic.FAST_POINTS.get(fast_f, 0),
+        "Yếu tay/chân (A)": stroke_logic.FAST_POINTS.get(fast_a, 0),
+        "Nói khó (S)": stroke_logic.FAST_POINTS.get(fast_s, 0),
+        "Đau đầu (T)": stroke_logic.FAST_POINTS.get(fast_t, 0)
+    }
+    
+    xai_payload = json.dumps({
+        "ml": xai_factors,
+        "fast": fast_breakdown,
+        "ml_total": risk_summary["ml_score"],
+        "fast_total": risk_summary["fast_sum"],
+        "weighted_ml": risk_summary["weighted_ml"],
+        "weighted_fast": risk_summary["weighted_fast"],
+        "final_score": risk_summary["final_score"]
+    }, ensure_ascii=False)
+
     fields = dict(
         age=user.age, gender=user.gender, work_type=user.work_type,
         ever_married=user.ever_married, residence_type=user.residence_type,
@@ -388,6 +416,7 @@ async def form_post(
         ml_score=risk_summary["ml_score"], fast_sum=risk_summary["fast_sum"],
         combined_score=risk_summary["combined_score"], final_score=risk_summary["final_score"],
         override_msg=risk_summary["override_msg"], advice=advice_json,
+        xai_data=xai_payload
     )
     
     if existing:

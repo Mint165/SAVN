@@ -128,7 +128,15 @@
       <i class="fa-solid fa-chevron-down xai-chevron"></i>
     </div>
     <div class="xai-content">
-      <p class="xai-description" data-i18n="xai_desc">Biểu đồ dưới đây cho thấy các nhóm yếu tố đóng góp bao nhiêu vào kết quả dự đoán của bạn.</p>
+      <p class="xai-description" style="margin-bottom:.5rem" data-i18n="xai_desc">Biểu đồ dưới đây cho thấy các nhóm yếu tố đóng góp bao nhiêu vào kết quả dự đoán của bạn.</p>
+      <div style="font-family: monospace; font-size: 0.85rem; color: var(--success); margin-bottom: 0.5rem; background: rgba(16, 185, 129, 0.05); padding: 0.5rem; border-radius: 4px;">
+        Tính theo: <span style="color:var(--text-muted)">| hệ số hồi quy × giá trị đã chuẩn hóa |</span>
+      </div>
+      <div style="font-size: 0.88rem; margin-bottom: 1.25rem; font-weight: 500;">
+        Tổng điểm: <span style="color:var(--danger)">{{ xai.final_score }}/100</span> &middot; 
+        ML (40%): <span style="color:var(--primary)">{{ xai.weighted_ml }}/40</span> &middot; 
+        FAST (60%): <span style="color:var(--danger)">{{ xai.weighted_fast }}/60</span>
+      </div>
       
       <!-- FAST Section -->
       <div class="xai-group-title"><i class="fa-solid fa-stethoscope"></i> <span data-i18n="xai_fast_title">Triệu chứng FAST — Y khoa (60%)</span></div>
