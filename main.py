@@ -407,7 +407,7 @@ async def form_post(
         pass
 
     db.commit()
-    return RedirectResponse(url="/", status_code=302)
+    return RedirectResponse(url="/report", status_code=302)
 
 # ============================================================
 # EXERCISE
