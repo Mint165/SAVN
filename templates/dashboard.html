@@ -137,6 +137,13 @@
         ML (40%): <span style="color:var(--primary)">{{ xai.weighted_ml }}/40</span> &middot; 
         FAST (60%): <span style="color:var(--danger)">{{ xai.weighted_fast }}/60</span>
       </div>
+
+      {% if xai_msg %}
+      <div class="xai-summary-text" style="padding: 1rem; border-radius: 8px; background: rgba(139, 92, 246, 0.08); border-left: 4px solid var(--primary); margin-bottom: 1.5rem; font-size: 0.92rem; line-height: 1.6;">
+        <span data-lang="vi">{{ xai_msg | safe }}</span>
+        <span data-lang="en" style="display:none">{{ xai_msg_en | safe }}</span>
+      </div>
+      {% endif %}
       
       <!-- FAST Section -->
       <div class="xai-group-title"><i class="fa-solid fa-stethoscope"></i> <span data-i18n="xai_fast_title">Triệu chứng FAST — Y khoa (60%)</span></div>

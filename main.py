@@ -299,6 +299,8 @@ async def home(request: Request, db: Session = Depends(get_db)):
         "latest_record": latest_record,
         "advice_list_vi": advice_list_vi,
         "advice_list_en": advice_list_en,
+        "xai_msg": stroke_logic.get_key_factors_msg(xai_factors, 'vi') if xai_factors else "",
+        "xai_msg_en": stroke_logic.get_key_factors_msg(xai_factors, 'en') if xai_factors else "",
     })
 
 # ============================================================
@@ -557,10 +559,15 @@ async def report_get(request: Request, db: Session = Depends(get_db)):
         warn_en.append("HIGH stroke risk — schedule a doctor's appointment this week.")
     
     latest_record = records[-1] if records else None
+    xai_data = json.loads(latest_record.xai_data) if latest_record and latest_record.xai_data else None
+    xai_msg = stroke_logic.get_key_factors_msg(xai_data['ml'], 'vi') if xai_data else ""
+    xai_msg_en = stroke_logic.get_key_factors_msg(xai_data['ml'], 'en') if xai_data else ""
 
     return templates.TemplateResponse(request=request, name="report.html", context={
         "user": user, "records": records,
         "latest_record": latest_record,
+        "xai_msg": xai_msg,
+        "xai_msg_en": xai_msg_en,
         "dates": json.dumps(dates),
         "systolic": json.dumps(systolic_data),
         "diastolic": json.dumps(diastolic_data),

@@ -262,10 +262,43 @@ def calc_xai_groups(df_row: pd.DataFrame, meta) -> Dict[str, float]:
     return {
         group_name: round(
             sum(abs(coeffs.get(col, 0) * df_scaled[col].values[0]) for col in cols if col in df_scaled.columns),
-            3,
+            2,
         )
         for group_name, cols in groups.items()
     }
+
+
+def get_key_factors_msg(xai_groups, lang='vi'):
+    # Find top 2 factors
+    sorted_factors = sorted(xai_groups.items(), key=lambda x: x[1], reverse=True)
+    top_factors = [f[0] for f in sorted_factors[:2] if f[1] > 0]
+    
+    if not top_factors:
+        return "Các chỉ số của bạn khá cân bằng." if lang == 'vi' else "Your metrics are fairly balanced."
+    
+    # Mapping for translation
+    trans = {
+        "Tuổi tác": {"vi": "Tuổi tác", "en": "Age"},
+        "Huyết áp / Tim": {"vi": "Huyết áp & Tim mạch", "en": "Blood Pressure & Heart"},
+        "Đường huyết": {"vi": "Đường huyết", "en": "Blood Glucose"},
+        "Chỉ số BMI": {"vi": "Chỉ số BMI", "en": "BMI Index"},
+        "Hút thuốc": {"vi": "Hút thuốc", "en": "Smoking status"},
+        "Nghề nghiệp": {"vi": "Nghề nghiệp", "en": "Occupation"},
+        "Giới tính": {"vi": "Giới tính", "en": "Gender"}
+    }
+    
+    f1 = trans.get(top_factors[0], {}).get(lang, top_factors[0])
+    if len(top_factors) > 1:
+        f2 = trans.get(top_factors[1], {}).get(lang, top_factors[1])
+        if lang == 'vi':
+            return f"Phân tích cho thấy <strong>{f1}</strong> và <strong>{f2}</strong> là những yếu tố chính ảnh hưởng đến rủi ro của bạn."
+        else:
+            return f"Analysis shows that <strong>{f1}</strong> and <strong>{f2}</strong> are the primary factors affecting your risk."
+    else:
+        if lang == 'vi':
+            return f"Yếu tố quan trọng nhất cần lưu ý là <strong>{f1}</strong>."
+        else:
+            return f"The most significant factor to note is <strong>{f1}</strong>."
 
 
 def generate_advice_en(
