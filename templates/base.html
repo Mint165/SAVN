@@ -239,6 +239,28 @@ function toggleMobileMenu(){
   if(menu) menu.classList.toggle('hidden');
 }
 
+// ─── Global Keyboard Support ─────────────────────────────────
+window.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    // 1. Close Settings
+    var settings = document.getElementById('settingsModal');
+    if (settings && !settings.classList.contains('hidden')) {
+      closeModal('settingsModal');
+    }
+    // 2. Close AI Checker (specially handled to stop camera)
+    var aiModal = document.getElementById('aiCheckerModal');
+    if (aiModal && !aiModal.classList.contains('hidden')) {
+      if (typeof closeAIChecker === 'function') closeAIChecker();
+      else closeModal('aiCheckerModal');
+    }
+    // 3. Close mobile menu
+    var mobileMenu = document.getElementById('mobileMenuOverlay');
+    if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
+      mobileMenu.classList.add('hidden');
+    }
+  }
+});
+
 // ─── GLOBAL GOLDEN HOUR INIT ─────────────────────────────────
 // ─── triggerEmergency: called by AI Vision/Speech modules ──────
 window.triggerEmergency = function(source){
