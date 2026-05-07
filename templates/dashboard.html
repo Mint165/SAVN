@@ -160,6 +160,44 @@
   </div>
   {% endif %}
 
+  <!-- DIGITAL TWIN SECTION -->
+  <div class="card digital-twin-card" style="margin-bottom: 1.5rem; border: 1px solid rgba(139, 92, 246, 0.3); background: linear-gradient(to bottom right, var(--bg-card), rgba(139, 92, 246, 0.05));">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h3 style="font-weight: 700; color: var(--primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+        <i class="fa-solid fa-user-astronaut"></i> <span data-i18n="digital_twin_title">Gương Thần Sức Khỏe (Digital Twin)</span>
+      </h3>
+    </div>
+    <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 1rem;" data-i18n="dt_desc">Mô phỏng nguy cơ đột quỵ trong tương lai dựa trên sức khỏe hiện tại.</p>
+    
+    <div class="timeframe-selector" style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 0.5rem;">
+      <button class="btn btn-sm dt-time-btn" data-months="3" data-i18n="time_3m" onclick="updateDigitalTwin(3)">3 Tháng</button>
+      <button class="btn btn-sm dt-time-btn" data-months="6" data-i18n="time_6m" onclick="updateDigitalTwin(6)">6 Tháng</button>
+      <button class="btn btn-sm dt-time-btn active" style="background: var(--primary); color: white;" data-months="12" data-i18n="time_1y" onclick="updateDigitalTwin(12)">1 Năm</button>
+      <button class="btn btn-sm dt-time-btn" data-months="24" data-i18n="time_2y" onclick="updateDigitalTwin(24)">2 Năm</button>
+      <button class="btn btn-sm dt-time-btn" data-months="60" data-i18n="time_5y" onclick="updateDigitalTwin(60)">5 Năm</button>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center;">
+      <!-- Gauge -->
+      <div style="flex: 1; min-width: 150px; text-align: center; background: var(--bg-app); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid var(--border);">
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;" data-i18n="future_risk_label">Rủi Ro Tương Lai</div>
+        <div id="dtRiskValue" style="font-size: 3rem; font-weight: 800; color: var(--primary); line-height: 1; transition: color 0.3s;">--%</div>
+        <div id="dtRiskDelta" style="font-size: 0.85rem; font-weight: 600; margin-top: 0.5rem;"></div>
+      </div>
+      
+      <!-- Advice & Mini Chart Container -->
+      <div style="flex: 2; min-width: 250px;">
+        <div id="dtAdviceBox" style="padding: 1rem; border-radius: 0.5rem; background: rgba(16, 185, 129, 0.1); color: var(--success); font-size: 0.9rem; font-weight: 500; margin-bottom: 1rem; transition: all 0.3s;">
+          --
+        </div>
+        <div style="height: 120px; width: 100%; position: relative;">
+          <canvas id="dtChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- END DIGITAL TWIN -->
+
   <div class="charts-container">
     <div class="card chart-card"><h3><i class="fa-solid fa-droplet"></i> <span data-i18n="chart_bp">Biến Động Huyết Áp</span></h3><canvas id="bpChart"></canvas></div>
     <div class="card chart-card"><h3><i class="fa-solid fa-chart-area"></i> <span data-i18n="chart_risk">Nguy Cơ Đột Quỵ (%)</span></h3><canvas id="riskChart"></canvas></div>
@@ -187,9 +225,138 @@
 
 <script>
 var dates={{ dates|safe }};var systolicD={{ systolic|safe }};var diastolicD={{ diastolic|safe }};var strokeScores={{ stroke_scores|safe }};var glucoseD={{ glucose_data|safe }};
-{% if latest_record %}var latestScore={{ latest_record.final_score }};{% else %}var latestScore=0;{% endif %}
+{% if latest_record %}
+var latestScore={{ latest_record.final_score }};
+var latestRecord = { systolic: {{ latest_record.systolic }}, diastolic: {{ latest_record.diastolic }}, avg_glucose_level: {{ latest_record.avg_glucose_level or 0 }} };
+{% else %}
+var latestScore=0;
+var latestRecord = null;
+{% endif %}
+var currentUser = {
+  age: {{ user.age or 50 }},
+  smoking_status: "{{ user.smoking_status or '' }}"
+};
 
-// Golden hour logic is now handled globally in base.html using backend data
+// --- DIGITAL TWIN LOGIC ---
+var dtChartObj = null;
+
+function simulateFutureRisk(months) {
+    if (!latestRecord) return { score: 0, adviceKey: 'dt_advice_good' };
+    
+    let baseScore = latestScore;
+    
+    // Base aging penalty (0.5% per year)
+    let agePenalty = (months / 12) * 0.5;
+    
+    // Lifestyle Penalties
+    let bpPenalty = 0;
+    if (latestRecord.systolic >= 140) bpPenalty = (months / 12) * 2.4; 
+    
+    let smokingPenalty = 0;
+    let smk = currentUser.smoking_status.toLowerCase();
+    if (smk.includes("smokes") || smk.includes("đang hút") || smk === "đang hút") {
+        smokingPenalty = (months / 12) * 6.0; 
+    }
+    
+    let glucosePenalty = 0;
+    if (latestRecord.avg_glucose_level > 140) glucosePenalty = (months / 12) * 2.0;
+    
+    let futureScore = Math.min(99, Math.round(baseScore + agePenalty + bpPenalty + smokingPenalty + glucosePenalty));
+    
+    let adviceKey = 'dt_advice_good';
+    if (futureScore >= 75) adviceKey = 'dt_advice_danger';
+    else if (futureScore >= 50 || (futureScore - baseScore > 10)) adviceKey = 'dt_advice_warn';
+    
+    return { score: futureScore, adviceKey: adviceKey };
+}
+
+function updateDigitalTwin(months) {
+    // UI Updates
+    document.querySelectorAll('.dt-time-btn').forEach(b => {
+        if(parseInt(b.getAttribute('data-months')) === months) {
+            b.classList.add('active');
+            b.style.background = 'var(--primary)';
+            b.style.color = 'white';
+        } else {
+            b.classList.remove('active');
+            b.style.background = 'transparent';
+            b.style.color = 'var(--text-main)';
+        }
+    });
+
+    let res = simulateFutureRisk(months);
+    let elVal = document.getElementById('dtRiskValue');
+    let elDelta = document.getElementById('dtRiskDelta');
+    let elBox = document.getElementById('dtAdviceBox');
+    
+    elVal.textContent = res.score + '%';
+    
+    let delta = res.score - latestScore;
+    if (delta > 0) {
+        elDelta.innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i> Tăng ${delta}%`;
+        elDelta.style.color = 'var(--danger)';
+    } else {
+        elDelta.innerHTML = `<i class="fa-solid fa-minus"></i> Không đổi`;
+        elDelta.style.color = 'var(--text-muted)';
+    }
+
+    // Color code
+    let color = 'var(--success)';
+    let bg = 'rgba(16, 185, 129, 0.1)';
+    if (res.score >= 75) { color = 'var(--danger)'; bg = 'rgba(239, 68, 68, 0.1)'; }
+    else if (res.score >= 50) { color = 'var(--warning)'; bg = 'rgba(245, 158, 11, 0.1)'; }
+    
+    elVal.style.color = color;
+    elBox.style.color = color;
+    elBox.style.background = bg;
+
+    // Translation
+    let lang = localStorage.getItem('lang') || 'vi';
+    let d = I18N[lang] || I18N.vi;
+    elBox.textContent = d[res.adviceKey] || "Advice";
+
+    // Chart Update
+    let ctx = document.getElementById('dtChart').getContext('2d');
+    let chartData = [latestScore, res.score];
+    let chartLabels = [lang === 'en' ? "Current" : "Hiện tại", lang === 'en' ? "Future" : "Tương lai"];
+    
+    if (dtChartObj) dtChartObj.destroy();
+    dtChartObj = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                data: chartData,
+                borderColor: color,
+                backgroundColor: bg,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { min: 0, max: 100, display: false },
+                x: { grid: { display: false }, ticks: { font: { family: "'Inter', sans-serif" } } }
+            },
+            animation: { duration: 500 }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    if(latestRecord) updateDigitalTwin(12); // Default to 1 year
+});
+window.addEventListener('languageChanged', function(){
+    let activeBtn = document.querySelector('.dt-time-btn.active');
+    if(activeBtn && latestRecord) {
+        updateDigitalTwin(parseInt(activeBtn.getAttribute('data-months')));
+    }
+});
 </script>
 <script src="/static/js/dashboard.js"></script>
 
