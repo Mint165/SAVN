@@ -120,8 +120,7 @@
   </div>
 
 
-  {% if latest_record.xai_data %}
-  {% set xai = latest_record.xai_data | from_json %}
+  {% if xai %}
   <div class="xai-container" id="xaiAccordion" style="margin-bottom:1.5rem">
     <div class="xai-header" onclick="toggleXAI()">
       <h4><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="xai_title">Phân tích chi tiết đóng góp từng yếu tố (XAI)</span></h4>

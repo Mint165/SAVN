@@ -23,8 +23,7 @@
     <div class="card chart-card"><h3><i class="fa-solid fa-chart-area"></i> <span data-i18n="chart_risk">Nguy Cơ Đột Quỵ (%)</span></h3><canvas id="reportRiskChart"></canvas></div>
   </div>
 
-  {% if latest_record.xai_data %}
-  {% set xai = latest_record.xai_data | from_json %}
+  {% if xai %}
   <div class="xai-container" id="xaiAccordion" style="margin-bottom:2rem">
     <div class="xai-header" onclick="toggleXAI()">
       <h4><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="xai_title">Phân tích chi tiết đóng góp từng yếu tố (XAI)</span></h4>
