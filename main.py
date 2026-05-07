@@ -269,6 +269,15 @@ async def home(request: Request, db: Session = Depends(get_db)):
     glucose_data = [r.avg_glucose_level for r in records]
     latest_record = records[-1] if records else None
     
+    xai_data = None
+    xai_factors = {}
+    if latest_record and latest_record.xai_data:
+        try:
+            xai_data = json.loads(latest_record.xai_data)
+            xai_factors = xai_data.get('ml', {})
+        except Exception:
+            pass
+
     # Parse advice for latest record (bilingual)
     advice_list_vi = []
     advice_list_en = []
@@ -299,6 +308,7 @@ async def home(request: Request, db: Session = Depends(get_db)):
         "latest_record": latest_record,
         "advice_list_vi": advice_list_vi,
         "advice_list_en": advice_list_en,
+        "xai": xai_data,
         "xai_msg": stroke_logic.get_key_factors_msg(xai_factors, 'vi') if xai_factors else "",
         "xai_msg_en": stroke_logic.get_key_factors_msg(xai_factors, 'en') if xai_factors else "",
     })
@@ -566,6 +576,7 @@ async def report_get(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request=request, name="report.html", context={
         "user": user, "records": records,
         "latest_record": latest_record,
+        "xai": xai_data,
         "xai_msg": xai_msg,
         "xai_msg_en": xai_msg_en,
         "dates": json.dumps(dates),
