@@ -182,10 +182,11 @@ a{text-decoration:none;color:inherit}
 .logout-item a i { color: var(--danger) !important; }
 .modal-content{width:92%;max-width:520px;max-height:88vh;overflow-y:auto;animation:slideUp .3s ease;position:relative}
 @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
-.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;position:relative;padding-right:2.5rem}
-.modal-header h3{font-size:1.2rem;font-weight:800}
-.btn-close{position:absolute;top:1rem;right:1rem;z-index:10;background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:.5rem;border-radius:.4rem;line-height:1;display:flex;align-items:center;justify-content:center}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;position:relative;padding-right:2.5rem}
+.modal-header h3{font-size:1.15rem;font-weight:800;margin:0}
+.btn-close{position:absolute;top:0.5rem;right:0.5rem;z-index:10;background:none;border:none;color:var(--text-muted);font-size:1.4rem;cursor:pointer;padding:.4rem;border-radius:.4rem;line-height:1;display:flex;align-items:center;justify-content:center;transition:all .2s}
 .btn-close:hover{color:var(--danger);background:rgba(239,68,68,0.1)}
+.modal-overlay{backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)} /* Reduced blur for performance */
 
 /* FORMS */
 .form-group{margin-bottom:1.25rem}

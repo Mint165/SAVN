@@ -159,6 +159,7 @@ async def login_post(
     bmi: float = Form(None),
     db: Session = Depends(get_db)
 ):
+    username = username.strip()
     if action == "register":
         existing = db.query(models.User).filter(models.User.username == username).first()
         if existing:

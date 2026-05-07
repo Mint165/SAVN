@@ -164,15 +164,40 @@ var dates={{ dates|safe }};var systolicD={{ systolic|safe }};var diastolicD={{ d
 // ─── AI Checker Controller ────────────────────────────────────
 var _aiInitialized = false;
 
+// Pre-load AI when dashboard opens to save time later
+document.addEventListener('DOMContentLoaded', function(){
+  setTimeout(function(){
+    if(typeof HBVision !== 'undefined' && !_aiInitialized){
+       var videoEl = document.getElementById('aiVideo');
+       var canvasEl = document.getElementById('aiCanvas');
+       HBVision.init(videoEl, canvasEl, null); // Warm up
+       _aiInitialized = true;
+    }
+  }, 1000); 
+});
+
+function openSettings(){
+  document.getElementById('settingsModal').classList.remove('hidden');
+  var ts=document.getElementById('themeSelect');if(ts)ts.value=localStorage.getItem('theme')||'system';
+  var ls=document.getElementById('langSelect');if(ls)ls.value=localStorage.getItem('lang')||'vi';
+  var lang = ls.value;
+  document.querySelectorAll('#settingsModal [data-i18n]').forEach(function(el){
+    var key = el.getAttribute('data-i18n');
+    if(I18N[lang] && I18N[lang][key]) el.textContent = I18N[lang][key];
+  });
+}
+
 function openAIChecker(){
   document.getElementById('aiCheckerModal').classList.remove('hidden');
-  // Update reference sentence based on current language
   var lang = localStorage.getItem('lang') || 'vi';
   if(typeof HBSpeech !== 'undefined'){
     document.getElementById('aiRefSentence').textContent = HBSpeech.getReference();
   }
-  // Apply i18n to modal
-  changeLang(lang);
+  document.querySelectorAll('#aiCheckerModal [data-i18n]').forEach(function(el){
+    var key = el.getAttribute('data-i18n');
+    if(I18N[lang] && I18N[lang][key]) el.textContent = I18N[lang][key];
+  });
+  
   // Start face scan
   startFaceScan();
 }
