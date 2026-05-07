@@ -29,7 +29,7 @@
     <input type="hidden" name="action" value="login">
     <div class="form-group">
       <label><i class="fa-solid fa-user"></i> <span data-i18n="login_username">Tên đăng nhập</span></label>
-      <input type="text" name="username" required data-i18n-placeholder="login_user_ph" placeholder="Nhập tên tài khoản" autocomplete="username" oninput="this.value = this.value.trim()">
+      <input type="text" name="username" required data-i18n-placeholder="login_user_ph" placeholder="Nhập tên tài khoản" autocomplete="username" onblur="this.value = this.value.trim()">
     </div>
     <div class="form-group">
       <label><i class="fa-solid fa-lock"></i> <span data-i18n="login_password">Mật khẩu</span></label>
@@ -45,7 +45,7 @@
     <input type="hidden" name="action" value="register">
     <div class="form-group">
       <label><i class="fa-solid fa-user"></i> <span data-i18n="login_username">Tên đăng nhập</span></label>
-      <input type="text" name="username" required data-i18n-placeholder="reg_user_ph" placeholder="Chọn tên tài khoản" oninput="this.value = this.value.trim()">
+      <input type="text" name="username" required data-i18n-placeholder="reg_user_ph" placeholder="Chọn tên tài khoản" onblur="this.value = this.value.trim()">
     </div>
     <div class="form-group">
       <label><i class="fa-solid fa-lock"></i> <span data-i18n="login_password">Mật khẩu</span></label>
