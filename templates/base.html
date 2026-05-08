@@ -304,23 +304,53 @@ function captureGPS(){
 }
 function sendSOS(e){
   e.preventDefault();
+  var btn = document.getElementById('sos-btn');
+  var originalHTML = btn.innerHTML;
+  
   var phone = "{{ user.emergency_phone or '' if user else '' }}";
   if(!phone) {
     alert(localStorage.getItem('lang')==='en' ? "Please set an emergency contact in Profile first!" : "Vui lòng cài đặt số điện thoại người thân trong trang Hồ Sơ!");
     return;
   }
-  
+
   var lang = localStorage.getItem('lang')||'vi';
   var d = I18N[lang]||I18N.vi;
-  var body = (_sosLat && _sosLon) 
-    ? d.sos_msg + ' https://www.google.com/maps?q=' + _sosLat + ',' + _sosLon
-    : d.sos_msg_no_gps;
 
-  // Compatibility fix for iOS (uses &) vs Android (uses ?)
-  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  var smsLink = 'sms:' + phone + (isIOS ? '&' : '?') + 'body=' + encodeURIComponent(body);
-  
-  window.location.href = smsLink;
+  // Function to actually trigger the SMS/Link
+  var triggerLink = function(lat, lon) {
+    var body = (lat && lon) 
+      ? d.sos_msg + ' https://www.google.com/maps?q=' + lat + ',' + lon
+      : d.sos_msg_no_gps;
+
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    var smsLink = 'sms:' + phone + (isIOS ? '&' : '?') + 'body=' + encodeURIComponent(body);
+    
+    // For PC fallback: try opening WhatsApp if SMS fails or just as an alternative
+    // window.location.href = smsLink; 
+    // Optimization: Open in new window to prevent freezing
+    window.open(smsLink, '_self');
+    btn.innerHTML = originalHTML; // Reset button
+  };
+
+  if(!_sosLat || !_sosLon) {
+    btn.innerHTML = '<i class="fa-solid fa-location-crosshairs fa-spin"></i> ' + (lang==='en'?'Fetching Location...':'Đang lấy vị trí...');
+    if(navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function(p){
+          _sosLat=p.coords.latitude; _sosLon=p.coords.longitude;
+          triggerLink(_sosLat, _sosLon);
+        },
+        function(){
+          triggerLink(null, null); // Fallback to no GPS
+        },
+        {timeout:5000, maximumAge:0}
+      );
+    } else {
+      triggerLink(null, null);
+    }
+  } else {
+    triggerLink(_sosLat, _sosLon);
+  }
 }
 
 function initGoldenHour(){
