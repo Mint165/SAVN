@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
   var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   var gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
   var textColor = isDark ? '#94A3B8' : '#6B7280';
+  var pointStroke = isDark ? '#0F172A' : '#FFFFFF';
+  var hasTrend = dates.length > 1;
 
   Chart.defaults.color = textColor;
   Chart.defaults.font.family = "'Inter', sans-serif";
@@ -35,6 +37,24 @@ document.addEventListener('DOMContentLoaded', function() {
     g.addColorStop(0, c1); g.addColorStop(1, c2); return g;
   }
 
+  function lineOpts(color, fillColor, pointRadius, hoverRadius) {
+    return {
+      borderColor: color,
+      backgroundColor: hasTrend ? fillColor : 'transparent',
+      fill: hasTrend,
+      tension: 0,
+      spanGaps: true,
+      showLine: hasTrend,
+      borderWidth: 2.5,
+      pointRadius: hasTrend ? pointRadius : Math.max(pointRadius + 3, 7),
+      pointHoverRadius: hasTrend ? hoverRadius : Math.max(hoverRadius + 2, 9),
+      pointBackgroundColor: color,
+      pointBorderColor: pointStroke,
+      pointBorderWidth: 2,
+      clip: 12
+    };
+  }
+
   // BP Chart
   var bpCtx = document.getElementById('bpChart');
   if (bpCtx) {
@@ -44,8 +64,8 @@ document.addEventListener('DOMContentLoaded', function() {
       data: {
         labels: dates,
         datasets: [
-          { label: lbl.systolic, data: systolicD, borderColor: '#EF4444', backgroundColor: mkGrad(bc, 'rgba(239,68,68,0.2)', 'rgba(239,68,68,0)'), fill: true, tension: 0, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7 },
-          { label: lbl.diastolic, data: diastolicD, borderColor: '#10B981', backgroundColor: mkGrad(bc, 'rgba(16,185,129,0.2)', 'rgba(16,185,129,0)'), fill: true, tension: 0, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7 }
+          Object.assign({ label: lbl.systolic, data: systolicD }, lineOpts('#EF4444', mkGrad(bc, 'rgba(239,68,68,0.2)', 'rgba(239,68,68,0)'), 4, 7)),
+          Object.assign({ label: lbl.diastolic, data: diastolicD }, lineOpts('#10B981', mkGrad(bc, 'rgba(16,185,129,0.2)', 'rgba(16,185,129,0)'), 4, 7))
         ]
       },
       options: Object.assign({}, baseOpts, { scales: { x: baseOpts.scales.x, y: Object.assign({}, baseOpts.scales.y, { beginAtZero: false }) } })
@@ -60,14 +80,11 @@ document.addEventListener('DOMContentLoaded', function() {
       type: 'line',
       data: {
         labels: dates,
-        datasets: [{
+        datasets: [Object.assign({
           label: lbl.risk,
           data: strokeScores,
-          borderColor: '#F59E0B',
-          backgroundColor: mkGrad(rc, 'rgba(245,158,11,0.2)', 'rgba(245,158,11,0)'),
-          fill: true, tension: 0, borderWidth: 2.5, pointRadius: 5, pointHoverRadius: 8,
           segment: { borderColor: function(c) { return c.p0.parsed.y >= 75 ? '#EF4444' : undefined; } }
-        }]
+        }, lineOpts('#F59E0B', mkGrad(rc, 'rgba(245,158,11,0.2)', 'rgba(245,158,11,0)'), 5, 8))]
       },
       options: Object.assign({}, baseOpts, { scales: { x: baseOpts.scales.x, y: Object.assign({}, baseOpts.scales.y, { beginAtZero: true, max: 100 }) } })
     });
@@ -81,13 +98,10 @@ document.addEventListener('DOMContentLoaded', function() {
       type: 'line',
       data: {
         labels: dates,
-        datasets: [{
+        datasets: [Object.assign({
           label: lbl.glucose,
-          data: glucoseD,
-          borderColor: '#A78BFA',
-          backgroundColor: mkGrad(gc, 'rgba(167,139,250,0.2)', 'rgba(167,139,250,0)'),
-          fill: true, tension: 0, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7
-        }]
+          data: glucoseD
+        }, lineOpts('#A78BFA', mkGrad(gc, 'rgba(167,139,250,0.2)', 'rgba(167,139,250,0)'), 4, 7))]
       },
       options: Object.assign({}, baseOpts, { scales: { x: baseOpts.scales.x, y: Object.assign({}, baseOpts.scales.y, { beginAtZero: false }) } })
     });

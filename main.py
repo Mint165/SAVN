@@ -141,23 +141,116 @@ def get_current_user(request: Request, db: Session):
     except Exception:
         return None
 
+def build_xai_payload_from_record(record, user):
+    if not record or not user:
+        return None
+
+    _, ml_meta = get_ml_resources()
+    if not ml_meta:
+        return None
+
+    hypertension = record.hypertension
+    if hypertension is None:
+        hypertension = 1 if (record.systolic or 0) >= 140 or (record.diastolic or 0) >= 90 else 0
+
+    feature_df = stroke_logic.build_feature_row(
+        age=record.age if record.age is not None else user.age,
+        gender=record.gender or user.gender,
+        work_type=record.work_type or user.work_type,
+        smoking_status=record.smoking_status or user.smoking_status,
+        hypertension=hypertension,
+        heart_disease=record.heart_disease or 0,
+        avg_glucose_level=record.avg_glucose_level,
+        bmi=record.bmi if record.bmi is not None else user.bmi,
+        feature_names=ml_meta["feature_names"],
+    )
+    xai_factors = stroke_logic.calc_xai_groups(feature_df, ml_meta)
+
+    return {
+        "ml": xai_factors,
+        "fast": {
+            "Méo miệng (F)": stroke_logic.FAST_POINTS.get(record.fast_f or 0, 0),
+            "Yếu tay/chân (A)": stroke_logic.FAST_POINTS.get(record.fast_a or 0, 0),
+            "Nói khó (S)": stroke_logic.FAST_POINTS.get(record.fast_s or 0, 0),
+            "Đau đầu (T)": stroke_logic.FAST_POINTS.get(record.fast_t or 0, 0),
+        },
+        "ml_total": record.ml_score or 0,
+        "fast_total": record.fast_sum or 0,
+        "weighted_ml": round((record.ml_score or 0) * 0.4, 1),
+        "weighted_fast": round(((record.fast_sum or 0) / 100) * 60, 1),
+        "final_score": record.final_score or 0,
+        "insights_vi": stroke_logic.build_xai_insights(
+            xai_factors,
+            record.systolic,
+            record.diastolic,
+            record.avg_glucose_level,
+            record.bmi if record.bmi is not None else user.bmi,
+            record.age if record.age is not None else user.age,
+            record.smoking_status or user.smoking_status,
+            record.heart_disease or 0,
+            lang="vi",
+        ),
+        "insights_en": stroke_logic.build_xai_insights(
+            xai_factors,
+            record.systolic,
+            record.diastolic,
+            record.avg_glucose_level,
+            record.bmi if record.bmi is not None else user.bmi,
+            record.age if record.age is not None else user.age,
+            record.smoking_status or user.smoking_status,
+            record.heart_disease or 0,
+            lang="en",
+        ),
+    }
+
 def enrich_xai_payload(record, user):
-    if not record or not record.xai_data:
+    if not record:
         return None
+
+    xai = None
     try:
-        xai = json.loads(record.xai_data)
-        if "insights_vi" not in xai:
-            xai["insights_vi"] = stroke_logic.build_xai_insights(
-                xai.get("ml", {}), record.systolic, record.diastolic, 
-                record.avg_glucose_level, user.bmi, user.age, user.smoking_status, user.heart_disease or 0, lang="vi"
-            )
-            xai["insights_en"] = stroke_logic.build_xai_insights(
-                xai.get("ml", {}), record.systolic, record.diastolic, 
-                record.avg_glucose_level, user.bmi, user.age, user.smoking_status, user.heart_disease or 0, lang="en"
-            )
-        return xai
+        if record.xai_data:
+            xai = json.loads(record.xai_data)
     except Exception:
-        return None
+        xai = None
+
+    rebuilt = build_xai_payload_from_record(record, user)
+    if not xai:
+        return rebuilt
+
+    xai["ml"] = stroke_logic.normalize_xai_groups(xai.get("ml", {}))
+    if rebuilt:
+        for key, value in rebuilt.items():
+            if key not in xai or xai.get(key) in (None, {}, []):
+                xai[key] = value
+        if not xai["ml"]:
+            xai["ml"] = rebuilt.get("ml", {})
+
+    if "insights_vi" not in xai:
+        xai["insights_vi"] = stroke_logic.build_xai_insights(
+            xai.get("ml", {}),
+            record.systolic,
+            record.diastolic,
+            record.avg_glucose_level,
+            user.bmi,
+            user.age,
+            user.smoking_status,
+            user.heart_disease or 0,
+            lang="vi",
+        )
+    if "insights_en" not in xai:
+        xai["insights_en"] = stroke_logic.build_xai_insights(
+            xai.get("ml", {}),
+            record.systolic,
+            record.diastolic,
+            record.avg_glucose_level,
+            user.bmi,
+            user.age,
+            user.smoking_status,
+            user.heart_disease or 0,
+            lang="en",
+        )
+    return xai
 
 # ============================================================
 # AUTH ROUTES

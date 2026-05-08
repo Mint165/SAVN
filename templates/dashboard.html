@@ -299,6 +299,36 @@ function simulateFutureRisk(months) {
     return { score: futureScore, adviceKey: adviceKey };
 }
 
+function buildDigitalTwinAdvice(res, lang) {
+    let d = I18N[lang] || I18N.vi;
+    let warnings = [];
+
+    if (latestRecord.systolic >= 140 || latestRecord.diastolic >= 90) {
+        warnings.push(lang === 'en'
+            ? 'High blood pressure is the main driver. Please monitor closely and consult a doctor.'
+            : 'Huyết áp cao là yếu tố chính làm tăng rủi ro. Bạn nên theo dõi sát và trao đổi với bác sĩ.');
+    }
+    if ((latestRecord.avg_glucose_level || 0) > 140) {
+        warnings.push(lang === 'en'
+            ? 'High blood glucose is adding extra long-term risk.'
+            : 'Đường huyết cao đang làm tăng thêm rủi ro trong dài hạn.');
+    }
+    let smk = (currentUser.smoking_status || '').toLowerCase();
+    if (smk.includes('smokes') || smk.includes('đang hút')) {
+        warnings.push(lang === 'en'
+            ? 'Smoking is contributing to the projected risk increase.'
+            : 'Hút thuốc đang góp phần làm rủi ro tăng dần theo thời gian.');
+    }
+
+    if (res.score < 35 && warnings.length === 0) {
+        return d.dt_advice_good;
+    }
+    if (warnings.length > 0) {
+        return warnings.slice(0, 2).join(' ');
+    }
+    return d[res.adviceKey] || 'Advice';
+}
+
 function updateDigitalTwin(months) {
     // UI Updates
     document.querySelectorAll('.dt-time-btn').forEach(b => {
@@ -321,8 +351,6 @@ function updateDigitalTwin(months) {
     elVal.textContent = res.score + '%';
     
     let delta = res.score - latestScore;
-
-    // Translation
     let lang = localStorage.getItem('lang') || 'vi';
     let d = I18N[lang] || I18N.vi;
 
@@ -343,11 +371,7 @@ function updateDigitalTwin(months) {
     elVal.style.color = color;
     elBox.style.color = color;
     elBox.style.background = bg;
-
-    // Translation
-    let lang = localStorage.getItem('lang') || 'vi';
-    let d = I18N[lang] || I18N.vi;
-    elBox.textContent = d[res.adviceKey] || "Advice";
+    elBox.textContent = buildDigitalTwinAdvice(res, lang);
 }
 
 document.addEventListener('DOMContentLoaded', function() {

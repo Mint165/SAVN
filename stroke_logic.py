@@ -1,6 +1,6 @@
 """
-stroke_logic.py — Enhanced risk algorithm for HeartBits
-FAST scale: 0=Không, 1=Nhẹ, 2=Rõ, 3=Nặng
+stroke_logic.py - Enhanced risk and XAI logic for HeartBits.
+FAST scale: 0=None, 1=Mild, 2=Clear, 3=Severe
 """
 import os
 from typing import Dict, Iterable, List, Optional, Tuple
@@ -26,12 +26,60 @@ RISK_CRITICAL = 75
 RISK_HIGH = 55
 RISK_MODERATE = 35
 
+XAI_GROUP_AGE = "Tuổi tác"
+XAI_GROUP_HEART = "Huyết áp / Tim"
+XAI_GROUP_GLUCOSE = "Đường huyết"
+XAI_GROUP_BMI = "Chỉ số BMI"
+XAI_GROUP_SMOKING = "Hút thuốc"
+XAI_GROUP_WORK = "Nghề nghiệp"
+XAI_GROUP_GENDER = "Giới tính"
+
+XAI_GROUP_TRANSLATIONS = {
+    XAI_GROUP_AGE: {"vi": "Tuổi tác", "en": "Age"},
+    XAI_GROUP_HEART: {"vi": "Huyết áp & Tim mạch", "en": "Blood Pressure & Heart"},
+    XAI_GROUP_GLUCOSE: {"vi": "Đường huyết", "en": "Blood Glucose"},
+    XAI_GROUP_BMI: {"vi": "Chỉ số BMI", "en": "BMI Index"},
+    XAI_GROUP_SMOKING: {"vi": "Hút thuốc", "en": "Smoking status"},
+    XAI_GROUP_WORK: {"vi": "Nghề nghiệp", "en": "Occupation"},
+    XAI_GROUP_GENDER: {"vi": "Giới tính", "en": "Gender"},
+}
+
+LEGACY_XAI_LABELS = {
+    "TuÃ¡Â»â€¢i tÃƒÂ¡c": XAI_GROUP_AGE,
+    "HuyÃ¡ÂºÂ¿t ÃƒÂ¡p / Tim": XAI_GROUP_HEART,
+    "Ã„ÂÃ†Â°Ã¡Â»Âng huyÃ¡ÂºÂ¿t": XAI_GROUP_GLUCOSE,
+    "ChÃ¡Â»â€° sÃ¡Â»â€˜ BMI": XAI_GROUP_BMI,
+    "HÃƒÂºt thuÃ¡Â»â€˜c": XAI_GROUP_SMOKING,
+    "NghÃ¡Â»Â nghiÃ¡Â»â€¡p": XAI_GROUP_WORK,
+    "GiÃ¡Â»â€ºi tÃƒÂ­nh": XAI_GROUP_GENDER,
+}
+
+BASE_XAI_GROUPS = {
+    XAI_GROUP_AGE: ["age"],
+    XAI_GROUP_HEART: ["hypertension", "heart_disease"],
+    XAI_GROUP_GLUCOSE: ["avg_glucose_level"],
+    XAI_GROUP_BMI: ["bmi"],
+}
+
+PROTECTIVE_XAI_FEATURES = {
+    "smoking_status_never smoked",
+    "work_type_Never_worked",
+    "work_type_children",
+    "ever_married_No",
+}
+
+XAI_GROUP_WEIGHTS = {
+    XAI_GROUP_WORK: 0.35,
+    XAI_GROUP_GENDER: 0.2,
+}
+
 
 def load_artifacts(
     model_name: str = "stroke_final_model.pkl",
     meta_name: str = "preprocessor_meta.pkl",
 ):
     import joblib
+
     base_path = os.path.dirname(__file__)
     model_path = os.path.join(base_path, model_name)
     meta_path = os.path.join(base_path, meta_name)
@@ -90,7 +138,6 @@ def get_ml_probability(df_row: pd.DataFrame, scaler, model) -> float:
 
 
 def calc_fast_points_v2(fast_f: int, fast_a: int, fast_s: int, fast_t: int) -> int:
-    """Calculate FAST score from 4-level inputs."""
     total = sum(FAST_POINTS.get(v, 0) for v in [fast_f, fast_a, fast_s, fast_t])
     return min(total, 100)
 
@@ -106,28 +153,16 @@ def compute_risk_summary(
     avg_glucose: float = 100.0,
     age: float = 50.0,
 ) -> Dict[str, object]:
-    """
-    Enhanced risk algorithm:
-    - ML model contributes 55% of score
-    - FAST symptoms contribute up to 45%  
-    - Blood pressure modifier: hypertensive crisis adds up to 10 pts
-    - High glucose adds up to 5 pts
-    - Age over 70 adds 5 pts
-    """
     ml_score = int(ml_probability * 100)
     fast_sum = calc_fast_points_v2(fast_f, fast_a, fast_s, fast_t)
 
-    # 60/40 Weighted combination as requested by user's reference
-    # ML contributes 40%, FAST contributes 60%
     weighted_ml = ml_score * 0.4
-    weighted_fast = (fast_sum / 100) * 60  # Scale fast_sum to be out of 60
-    
+    weighted_fast = (fast_sum / 100) * 60
     base_score = int(weighted_ml + weighted_fast)
 
-    # Physical modifiers (Bonuses) - increased for better accuracy
     bp_bonus = 0
     if systolic >= 180 or diastolic >= 120:
-        bp_bonus = 15  # Hypertensive crisis
+        bp_bonus = 15
     elif systolic >= 140 or diastolic >= 90:
         bp_bonus = 8
     elif systolic >= 130 or diastolic >= 80:
@@ -146,9 +181,7 @@ def compute_risk_summary(
     final_score = min(99, combined_score)
     override_msg = None
 
-    # Hard overrides for severe FAST
-    max_fast = max(fast_f, fast_a, fast_s, fast_t)
-    if max_fast == FAST_LEVEL_SEVERE:
+    if max(fast_f, fast_a, fast_s, fast_t) == FAST_LEVEL_SEVERE:
         final_score = 99
         override_msg = (
             "⚠️ CẢNH BÁO KHẨN CẤP: Triệu chứng NẶNG được phát hiện — "
@@ -179,22 +212,18 @@ def generate_advice(
     heart_disease: int = 0,
     smoking_status: str = "never smoked",
 ) -> List[str]:
-    """Generate personalised health advice based on the patient's data."""
     advice = []
     max_fast = max(fast_f, fast_a, fast_s, fast_t)
 
-    # Emergency advice
     if max_fast == FAST_LEVEL_SEVERE or final_score >= RISK_CRITICAL:
         advice.append("🚨 Gọi cấp cứu 115 ngay lập tức! Đây là tình huống khẩn cấp y tế.")
-        return advice  # No other advice needed
+        return advice
 
-    # FAST advice
     if max_fast == FAST_LEVEL_CLEAR:
         advice.append("⚠️ Xuất hiện triệu chứng thần kinh đáng chú ý — hãy đến cơ sở y tế kiểm tra ngay hôm nay.")
     elif max_fast == FAST_LEVEL_MILD:
         advice.append("🔔 Có triệu chứng nhẹ. Theo dõi sát và ghi chép. Nếu nặng hơn, hãy đến khám bác sĩ.")
 
-    # Blood pressure advice
     if systolic >= 180 or diastolic >= 120:
         advice.append("🩺 Huyết áp ở mức nguy hiểm. Cần khám bác sĩ ngay trong ngày hôm nay.")
     elif systolic >= 140 or diastolic >= 90:
@@ -202,7 +231,6 @@ def generate_advice(
     elif systolic >= 120:
         advice.append("📊 Huyết áp tiền cao huyết áp. Duy trì lối sống lành mạnh và theo dõi đều đặn.")
 
-    # Glucose advice
     if avg_glucose is not None:
         if avg_glucose > 200:
             advice.append("🍬 Đường huyết rất cao. Cần điều chỉnh chế độ ăn và liên hệ bác sĩ về thuốc.")
@@ -211,25 +239,22 @@ def generate_advice(
         elif avg_glucose < 70:
             advice.append("⚡ Đường huyết thấp. Ăn nhẹ ngay và tránh hoạt động gắng sức.")
 
-    # Age advice
     if age >= 65:
         advice.append("🧓 Ở độ tuổi của bạn, khám sức khỏe định kỳ 3 tháng/lần là rất quan trọng.")
 
-    # Lifestyle advice
     if smoking_status == "smokes":
         advice.append("🚭 Hút thuốc lá làm tăng đáng kể nguy cơ đột quỵ. Hãy tìm sự hỗ trợ để bỏ thuốc.")
-    
+
     if heart_disease:
         advice.append("❤️ Với tiền sử bệnh tim, hãy uống thuốc đúng giờ và không bỏ tái khám.")
 
-    # Low risk encouragement
     if final_score < RISK_MODERATE and not advice:
         advice.append("✅ Các chỉ số của bạn đang tốt! Duy trì lối sống lành mạnh và tiếp tục theo dõi.")
 
     if final_score < RISK_HIGH:
         advice.append("🏃 Tập thể dục nhẹ 30 phút mỗi ngày giúp giảm nguy cơ đột quỵ đến 27%.")
 
-    return advice[:4]  # Return max 4 pieces of advice
+    return advice[:4]
 
 
 def get_score_meta(score: int) -> Tuple[str, str, str]:
@@ -242,105 +267,16 @@ def get_score_meta(score: int) -> Tuple[str, str, str]:
     return "#16A34A", "NGUY CƠ THẤP", "low"
 
 
-def calc_xai_groups(df_row: pd.DataFrame, meta) -> Dict[str, float]:
-    coeffs = meta.get("model_coefficients", {})
-    scaler = meta["scaler"]
-    feature_names = meta["feature_names"]
-    df_scaled = df_row.copy()
-    scaled_cols = ["age", "avg_glucose_level", "bmi"]
-    df_scaled[scaled_cols] = scaler.transform(df_row[scaled_cols])
-
-    groups = {
-        "Tuổi tác": ["age"],
-        "Huyết áp / Tim": ["hypertension", "heart_disease"],
-        "Đường huyết": ["avg_glucose_level"],
-        "Chỉ số BMI": ["bmi"],
-        "Hút thuốc": [n for n in feature_names if n.startswith("smoking_status_")],
-        "Nghề nghiệp": [n for n in feature_names if n.startswith("work_type_")],
-        "Giới tính": [n for n in feature_names if n.startswith("gender_")],
-    }
-
-    # List of features that should be considered protective or baseline (never contribute to risk)
-    protective_features = [
-        "smoking_status_never smoked",
-        "work_type_Never_worked",
-        "work_type_children",
-        "ever_married_No"
-    ]
-
-    return {
-        group_name: round(
-            sum(max(0, coeffs.get(col, 0) * df_scaled[col].values[0]) 
-                for col in cols 
-                if col in df_scaled.columns and col not in protective_features),
-            2,
-        )
-        for group_name, cols in groups.items()
-    }
-
-
-def get_key_factors_msg(xai_groups, lang='vi'):
-    # Find top 2 factors
-    sorted_factors = sorted(xai_groups.items(), key=lambda x: x[1], reverse=True)
-    top_factors = [f[0] for f in sorted_factors[:2] if f[1] > 0]
-    
-    if not top_factors:
-        return "Các chỉ số của bạn khá cân bằng." if lang == 'vi' else "Your metrics are fairly balanced."
-    
-    # Mapping for translation
-    trans = {
-        "Tuổi tác": {"vi": "Tuổi tác", "en": "Age"},
-        "Huyết áp / Tim": {"vi": "Huyết áp & Tim mạch", "en": "Blood Pressure & Heart"},
-        "Đường huyết": {"vi": "Đường huyết", "en": "Blood Glucose"},
-        "Chỉ số BMI": {"vi": "Chỉ số BMI", "en": "BMI Index"},
-        "Hút thuốc": {"vi": "Hút thuốc", "en": "Smoking status"},
-        "Nghề nghiệp": {"vi": "Nghề nghiệp", "en": "Occupation"},
-        "Giới tính": {"vi": "Giới tính", "en": "Gender"}
-    }
-    
-    f1 = trans.get(top_factors[0], {}).get(lang, top_factors[0])
-    if len(top_factors) > 1:
-        f2 = trans.get(top_factors[1], {}).get(lang, top_factors[1])
-        if lang == 'vi':
-            return f"Phân tích cho thấy <strong>{f1}</strong> và <strong>{f2}</strong> là những yếu tố chính ảnh hưởng đến rủi ro của bạn."
-        else:
-            return f"Analysis shows that <strong>{f1}</strong> and <strong>{f2}</strong> are the primary factors affecting your risk."
-    else:
-        if lang == 'vi':
-            return f"Yếu tố quan trọng nhất cần lưu ý là <strong>{f1}</strong>."
-        else:
-            return f"The most significant factor to note is <strong>{f1}</strong>."
-
-def build_xai_insights(xai_groups, systolic, diastolic, avg_glucose, bmi, age, smoking_status, heart_disease, lang="vi"):
-    insights = []
-    sorted_factors = sorted(xai_groups.items(), key=lambda x: x[1], reverse=True)
-    top_factors = [f[0] for f in sorted_factors[:3] if f[1] > 0]
-    
-    for factor in top_factors:
-        if factor == "Huyết áp / Tim":
-            if systolic >= 140 or diastolic >= 90:
-                insights.append("Huyết áp của bạn đang ở mức cao, đây là một trong những nguyên nhân trực tiếp làm tăng gánh nặng lên mạch máu và nguy cơ đột quỵ." if lang == "vi" else "Your blood pressure is high, which directly increases the strain on your blood vessels and your stroke risk.")
-            elif heart_disease:
-                insights.append("Tiền sử bệnh tim mạch của bạn làm tăng nguy cơ cục máu đông, cần tuân thủ nghiêm ngặt phác đồ điều trị." if lang == "vi" else "Your history of heart disease increases the risk of blood clots; strict adherence to treatment is crucial.")
-        elif factor == "Đường huyết":
-            if avg_glucose is not None and avg_glucose > 140:
-                insights.append("Mức đường huyết cao đang gây xơ vữa động mạch, một yếu tố rủi ro thầm lặng rất đáng kể." if lang == "vi" else "High blood glucose contributes to atherosclerosis, a significant silent risk factor.")
-        elif factor == "Hút thuốc":
-            if smoking_status == "smokes":
-                insights.append("Việc hút thuốc lá đang làm suy yếu thành mạch máu của bạn một cách rõ rệt. Bỏ thuốc là cách tốt nhất để giảm ngay rủi ro này." if lang == "vi" else "Smoking is visibly weakening your blood vessel walls. Quitting is the best way to immediately reduce this risk.")
-        elif factor == "Chỉ số BMI":
-            if bmi is not None and bmi >= 25:
-                insights.append("Chỉ số BMI cho thấy bạn đang thừa cân, điều này ảnh hưởng gián tiếp qua việc tăng nguy cơ tiểu đường và huyết áp cao." if lang == "vi" else "Your BMI indicates you are overweight, which indirectly increases risk by promoting diabetes and high blood pressure.")
-        elif factor == "Tuổi tác":
-            if age >= 60:
-                insights.append("Tuổi tác là yếu tố rủi ro tự nhiên không thể thay đổi, nhưng nó nhắc nhở bạn cần chú trọng hơn vào việc tầm soát sức khỏe định kỳ." if lang == "vi" else "Age is an unchangeable natural risk factor, but it reminds you to prioritize regular health screenings.")
-        elif factor == "Nghề nghiệp":
-            insights.append("Nghề nghiệp hoặc môi trường làm việc có thể mang lại căng thẳng (stress) hoặc tính chất ít vận động, góp phần làm tăng nhẹ rủi ro." if lang == "vi" else "Your occupation or work environment may involve stress or a sedentary lifestyle, slightly increasing your risk.")
-            
-    if not insights:
-        insights.append("Các chỉ số của bạn khá ổn định và không có yếu tố nào gây nguy hiểm vượt mức." if lang == "vi" else "Your indicators are quite stable and there are no overwhelmingly dangerous factors.")
-        
-    return insights[:3]
+def normalize_xai_groups(xai_groups: Optional[Dict[str, float]]) -> Dict[str, float]:
+    normalized: Dict[str, float] = {}
+    for raw_name, raw_value in (xai_groups or {}).items():
+        name = LEGACY_XAI_LABELS.get(raw_name, raw_name)
+        try:
+            value = float(raw_value)
+        except (TypeError, ValueError):
+            value = 0.0
+        normalized[name] = round(normalized.get(name, 0.0) + value, 2)
+    return normalized
 
 
 def calc_xai_groups(df_row: pd.DataFrame, meta) -> Dict[str, float]:
@@ -349,25 +285,10 @@ def calc_xai_groups(df_row: pd.DataFrame, meta) -> Dict[str, float]:
     scaler = meta.get("scaler")
     feature_names = meta["feature_names"]
 
-    groups = {
-        "Tuá»•i tÃ¡c": ["age"],
-        "Huyáº¿t Ã¡p / Tim": ["hypertension", "heart_disease"],
-        "ÄÆ°á»ng huyáº¿t": ["avg_glucose_level"],
-        "Chá»‰ sá»‘ BMI": ["bmi"],
-        "HÃºt thuá»‘c": [n for n in feature_names if n.startswith("smoking_status_")],
-        "Nghá» nghiá»‡p": [n for n in feature_names if n.startswith("work_type_")],
-        "Giá»›i tÃ­nh": [n for n in feature_names if n.startswith("gender_")],
-    }
-    protective_features = {
-        "smoking_status_never smoked",
-        "work_type_Never_worked",
-        "work_type_children",
-        "ever_married_No",
-    }
-    group_weights = {
-        "Nghá» nghiá»‡p": 0.35,
-        "Giá»›i tÃ­nh": 0.2,
-    }
+    groups = dict(BASE_XAI_GROUPS)
+    groups[XAI_GROUP_SMOKING] = [n for n in feature_names if n.startswith("smoking_status_")]
+    groups[XAI_GROUP_WORK] = [n for n in feature_names if n.startswith("work_type_")]
+    groups[XAI_GROUP_GENDER] = [n for n in feature_names if n.startswith("gender_")]
 
     def local_intensity(col: str) -> float:
         if col not in df_row.columns:
@@ -376,7 +297,7 @@ def calc_xai_groups(df_row: pd.DataFrame, meta) -> Dict[str, float]:
         if col in {"hypertension", "heart_disease"}:
             return 1.0 if value > 0 else 0.0
         if col.startswith(("gender_", "work_type_", "smoking_status_")):
-            return 1.0 if value > 0 and col not in protective_features else 0.0
+            return 1.0 if value > 0 and col not in PROTECTIVE_XAI_FEATURES else 0.0
 
         stats = (meta.get("feature_stats") or {}).get(col, {})
         if col == "age":
@@ -397,11 +318,13 @@ def calc_xai_groups(df_row: pd.DataFrame, meta) -> Dict[str, float]:
 
     if importances:
         return {
-            group_name: float(round(
-                sum(importances.get(col, 0.0) * local_intensity(col) * 100 for col in cols)
-                * group_weights.get(group_name, 1.0),
-                2,
-            ))
+            group_name: float(
+                round(
+                    sum(importances.get(col, 0.0) * local_intensity(col) * 100 for col in cols)
+                    * XAI_GROUP_WEIGHTS.get(group_name, 1.0),
+                    2,
+                )
+            )
             for group_name, cols in groups.items()
         }
 
@@ -411,17 +334,108 @@ def calc_xai_groups(df_row: pd.DataFrame, meta) -> Dict[str, float]:
         df_scaled[scaled_cols] = scaler.transform(df_row[scaled_cols])
 
     return {
-        group_name: float(round(
-            sum(
-                max(0.0, coeffs.get(col, 0.0) * df_scaled[col].values[0])
-                for col in cols
-                if col in df_scaled.columns and col not in protective_features
+        group_name: float(
+            round(
+                sum(
+                    max(0.0, coeffs.get(col, 0.0) * df_scaled[col].values[0])
+                    for col in cols
+                    if col in df_scaled.columns and col not in PROTECTIVE_XAI_FEATURES
+                )
+                * XAI_GROUP_WEIGHTS.get(group_name, 1.0),
+                2,
             )
-            * group_weights.get(group_name, 1.0),
-            2,
-        ))
+        )
         for group_name, cols in groups.items()
     }
+
+
+def get_key_factors_msg(xai_groups, lang='vi'):
+    sorted_factors = sorted(normalize_xai_groups(xai_groups).items(), key=lambda x: x[1], reverse=True)
+    top_factors = [f[0] for f in sorted_factors[:2] if f[1] > 0]
+
+    if not top_factors:
+        return "Các chỉ số của bạn khá cân bằng." if lang == "vi" else "Your metrics are fairly balanced."
+
+    f1 = XAI_GROUP_TRANSLATIONS.get(top_factors[0], {}).get(lang, top_factors[0])
+    if len(top_factors) > 1:
+        f2 = XAI_GROUP_TRANSLATIONS.get(top_factors[1], {}).get(lang, top_factors[1])
+        if lang == "vi":
+            return f"Phân tích cho thấy <strong>{f1}</strong> và <strong>{f2}</strong> là những yếu tố chính ảnh hưởng đến rủi ro của bạn."
+        return f"Analysis shows that <strong>{f1}</strong> and <strong>{f2}</strong> are the primary factors affecting your risk."
+
+    if lang == "vi":
+        return f"Yếu tố quan trọng nhất cần lưu ý là <strong>{f1}</strong>."
+    return f"The most significant factor to note is <strong>{f1}</strong>."
+
+
+def build_xai_insights(
+    xai_groups,
+    systolic,
+    diastolic,
+    avg_glucose,
+    bmi,
+    age,
+    smoking_status,
+    heart_disease,
+    lang="vi",
+):
+    insights = []
+    sorted_factors = sorted(normalize_xai_groups(xai_groups).items(), key=lambda x: x[1], reverse=True)
+    top_factors = [f[0] for f in sorted_factors[:3] if f[1] > 0]
+
+    for factor in top_factors:
+        if factor == XAI_GROUP_HEART:
+            if systolic >= 140 or diastolic >= 90:
+                insights.append(
+                    "Huyết áp của bạn đang ở mức cao, đây là một trong những nguyên nhân trực tiếp làm tăng gánh nặng lên mạch máu và nguy cơ đột quỵ."
+                    if lang == "vi"
+                    else "Your blood pressure is high, which directly increases the strain on your blood vessels and your stroke risk."
+                )
+            elif heart_disease:
+                insights.append(
+                    "Tiền sử bệnh tim mạch của bạn làm tăng nguy cơ cục máu đông, cần tuân thủ nghiêm ngặt phác đồ điều trị."
+                    if lang == "vi"
+                    else "Your history of heart disease increases the risk of blood clots; strict adherence to treatment is crucial."
+                )
+        elif factor == XAI_GROUP_GLUCOSE and avg_glucose is not None and avg_glucose > 140:
+            insights.append(
+                "Mức đường huyết cao đang gây xơ vữa động mạch, một yếu tố rủi ro thầm lặng rất đáng kể."
+                if lang == "vi"
+                else "High blood glucose contributes to atherosclerosis, a significant silent risk factor."
+            )
+        elif factor == XAI_GROUP_SMOKING and smoking_status == "smokes":
+            insights.append(
+                "Việc hút thuốc lá đang làm suy yếu thành mạch máu của bạn một cách rõ rệt. Bỏ thuốc là cách tốt nhất để giảm ngay rủi ro này."
+                if lang == "vi"
+                else "Smoking is visibly weakening your blood vessel walls. Quitting is the best way to immediately reduce this risk."
+            )
+        elif factor == XAI_GROUP_BMI and bmi is not None and bmi >= 25:
+            insights.append(
+                "Chỉ số BMI cho thấy bạn đang thừa cân, điều này ảnh hưởng gián tiếp qua việc tăng nguy cơ tiểu đường và huyết áp cao."
+                if lang == "vi"
+                else "Your BMI indicates you are overweight, which indirectly increases risk by promoting diabetes and high blood pressure."
+            )
+        elif factor == XAI_GROUP_AGE and age >= 60:
+            insights.append(
+                "Tuổi tác là yếu tố rủi ro tự nhiên không thể thay đổi, nhưng nó nhắc nhở bạn cần chú trọng hơn vào việc tầm soát sức khỏe định kỳ."
+                if lang == "vi"
+                else "Age is an unchangeable natural risk factor, but it reminds you to prioritize regular health screenings."
+            )
+        elif factor == XAI_GROUP_WORK:
+            insights.append(
+                "Nghề nghiệp hoặc môi trường làm việc có thể mang lại căng thẳng hoặc tính chất ít vận động, góp phần làm tăng nhẹ rủi ro."
+                if lang == "vi"
+                else "Your occupation or work environment may involve stress or a sedentary lifestyle, slightly increasing your risk."
+            )
+
+    if not insights:
+        insights.append(
+            "Các chỉ số của bạn khá ổn định và không có yếu tố nào gây nguy hiểm vượt mức."
+            if lang == "vi"
+            else "Your indicators are quite stable and there are no overwhelmingly dangerous factors."
+        )
+
+    return insights[:3]
 
 
 def generate_advice_en(
@@ -437,7 +451,6 @@ def generate_advice_en(
     heart_disease: int = 0,
     smoking_status: str = "never smoked",
 ) -> List[str]:
-    """Generate personalised health advice in English."""
     advice = []
     max_fast = max(fast_f, fast_a, fast_s, fast_t)
 
@@ -481,4 +494,3 @@ def generate_advice_en(
         advice.append("🏃 Light exercise for 30 minutes daily can reduce stroke risk by up to 27%.")
 
     return advice[:4]
-
