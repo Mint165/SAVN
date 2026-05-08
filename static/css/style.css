@@ -207,7 +207,11 @@ a{text-decoration:none;color:inherit}
 .error-msg{background:rgba(239,68,68,.08);color:#DC2626;padding:.85rem 1rem;border-radius:.75rem;border:1px solid rgba(239,68,68,.2);margin-bottom:1rem;font-weight:600;font-size:.9rem}
 [data-theme=dark] .error-msg{color:#FCA5A5}
 .password-input-wrapper { position: relative; display: flex; align-items: center; }
-.password-input-wrapper input { padding-right: 3rem !important; }
+.password-input-wrapper input { padding-right: 3.5rem !important; }
+/* Hide browser default password reveal buttons */
+input::-ms-reveal, input::-ms-clear { display: none; }
+input::-webkit-contacts-auto-fill-button, input::-webkit-credentials-auto-fill-button { visibility: hidden; pointer-events: none; }
+
 .password-toggle {
     position: absolute;
     right: 0.75rem;
