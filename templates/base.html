@@ -303,8 +303,9 @@ function captureGPS(){
   }
 }
 function sendSOS(e){
-  e.preventDefault();
+  if(e) e.preventDefault();
   var btn = document.getElementById('sos-btn');
+  if(!btn) return;
   var originalHTML = btn.innerHTML;
   
   var phone = "{{ user.emergency_phone or '' if user else '' }}";
@@ -316,7 +317,6 @@ function sendSOS(e){
   var lang = localStorage.getItem('lang')||'vi';
   var d = I18N[lang]||I18N.vi;
 
-  // Function to actually trigger the SMS/Link
   var triggerLink = function(lat, lon) {
     var body = (lat && lon) 
       ? d.sos_msg + ' https://www.google.com/maps?q=' + lat + ',' + lon
@@ -325,15 +325,12 @@ function sendSOS(e){
     var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     var smsLink = 'sms:' + phone + (isIOS ? '&' : '?') + 'body=' + encodeURIComponent(body);
     
-    // For PC fallback: try opening WhatsApp if SMS fails or just as an alternative
-    // window.location.href = smsLink; 
-    // Optimization: Open in new window to prevent freezing
-    window.open(smsLink, '_self');
-    btn.innerHTML = originalHTML; // Reset button
+    btn.innerHTML = originalHTML; // Reset button before redirect
+    window.location.href = smsLink;
   };
 
   if(!_sosLat || !_sosLon) {
-    btn.innerHTML = '<i class="fa-solid fa-location-crosshairs fa-spin"></i> ' + (lang==='en'?'Fetching Location...':'Đang lấy vị trí...');
+    btn.innerHTML = '<i class="fa-solid fa-location-crosshairs fa-spin"></i> ' + (lang==='en'?'GPS...':'Đang định vị...');
     if(navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         function(p){
@@ -341,9 +338,9 @@ function sendSOS(e){
           triggerLink(_sosLat, _sosLon);
         },
         function(){
-          triggerLink(null, null); // Fallback to no GPS
+          triggerLink(null, null);
         },
-        {timeout:5000, maximumAge:0}
+        {timeout:4000, maximumAge:0}
       );
     } else {
       triggerLink(null, null);
