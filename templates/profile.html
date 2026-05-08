@@ -7,6 +7,9 @@
   {% if request.query_params.get('setup') %}
   <div class="alert alert-warning"><i class="fa-solid fa-triangle-exclamation"></i><div><strong data-i18n="profile_setup_alert">Hoàn thiện hồ sơ trước khi nhập dữ liệu!</strong> <span data-i18n="profile_setup_desc">Thông tin của bạn giúp hệ thống AI dự đoán chính xác hơn.</span></div></div>
   {% endif %}
+  {% if error %}
+  <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i><div>{{ error }}</div></div>
+  {% endif %}
 
   <div class="profile-grid">
     <div>
@@ -35,6 +38,7 @@
       <div class="card" style="margin-bottom:1.5rem">
         <h3 style="font-weight:700;margin-bottom:1.25rem;font-size:1.05rem"><i class="fa-solid fa-pen"></i> <span data-i18n="profile_edit">Chỉnh Sửa Hồ Sơ</span></h3>
         <form method="post" action="/profile">
+          <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
           <div class="grid-2">
             <div class="form-group"><label data-i18n="profile_age">Tuổi</label><input type="number" name="age" value="{{ user.age or '' }}" required min="1" max="120"></div>
             <div class="form-group"><label data-i18n="profile_gender">Giới tính</label><select name="gender" required><option value="Male" {% if user.gender=='Male' %}selected{% endif %} data-i18n-opt="profile_gender_male">Nam</option><option value="Female" {% if user.gender=='Female' %}selected{% endif %} data-i18n-opt="profile_gender_female">Nữ</option><option value="Other" {% if user.gender=='Other' %}selected{% endif %} data-i18n-opt="profile_gender_other">Khác</option></select></div>
@@ -73,7 +77,10 @@
   </div>
 
   <div style="margin-top:1.5rem;text-align:right">
-    <a href="/logout" class="btn btn-danger-outline"><i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="profile_logout">Đăng Xuất</span></a>
+    <form method="post" action="/logout" style="display:inline-block;margin:0">
+      <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+      <button type="submit" class="btn btn-danger-outline"><i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="profile_logout">Đăng Xuất</span></button>
+    </form>
   </div>
 </div>
 <script>

@@ -1,8 +1,8 @@
 // ─── HeartBits AI Vision: Face Drooping Detection ───────────────
 // Uses MediaPipe Face Mesh to measure facial asymmetry in real-time.
-// If asymmetry exceeds threshold for 3 consecutive seconds → triggerEmergency()
+// Sustained asymmetry only raises a manual confirmation prompt in the UI.
 
-var HBVision = (function(){
+var HBVision = (function () {
   var faceMesh = null;
   var camera = null;
   var running = false;
@@ -12,13 +12,15 @@ var HBVision = (function(){
 
   var _statusCallback = null;
 
-  function init(videoEl, canvasEl, statusCallback){
+  function init(videoEl, canvasEl, statusCallback) {
     _statusCallback = statusCallback;
     var ctx = canvasEl.getContext('2d');
 
-    faceMesh = new FaceMesh({locateFile: function(file){
-      return 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/' + file;
-    }});
+    faceMesh = new FaceMesh({
+      locateFile: function (file) {
+        return 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/' + file;
+      }
+    });
 
     faceMesh.setOptions({
       maxNumFaces: 1,
@@ -27,16 +29,16 @@ var HBVision = (function(){
       minTrackingConfidence: 0.5
     });
 
-    faceMesh.onResults(function(results){
+    faceMesh.onResults(function (results) {
       ctx.save();
       ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
       ctx.drawImage(results.image, 0, 0, canvasEl.width, canvasEl.height);
 
-      if(results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0){
+      if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
         var lm = results.multiFaceLandmarks[0];
 
         // Draw face mesh
-        drawConnectors(ctx, lm, FACEMESH_TESSELATION, {color: '#10B98140', lineWidth: 1});
+        drawConnectors(ctx, lm, FACEMESH_TESSELATION, { color: '#10B98140', lineWidth: 1 });
 
         // Key landmarks: mouth corners (61 left, 291 right), forehead (10), chin (152)
         var leftMouth = lm[61];
@@ -49,34 +51,30 @@ var HBVision = (function(){
         var color = score > ALERT_THRESHOLD ? '#EF4444' : '#10B981';
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.arc(leftMouth.x * canvasEl.width, leftMouth.y * canvasEl.height, 5, 0, 2*Math.PI);
-        ctx.arc(rightMouth.x * canvasEl.width, rightMouth.y * canvasEl.height, 5, 0, 2*Math.PI);
+        ctx.arc(leftMouth.x * canvasEl.width, leftMouth.y * canvasEl.height, 5, 0, 2 * Math.PI);
+        ctx.arc(rightMouth.x * canvasEl.width, rightMouth.y * canvasEl.height, 5, 0, 2 * Math.PI);
         ctx.fill();
 
         // Check sustained asymmetry
-        if(score > ALERT_THRESHOLD){
+        if (score > ALERT_THRESHOLD) {
           alertCounter++;
         } else {
           alertCounter = Math.max(0, alertCounter - 2); // Decay
         }
 
         var isAlert = alertCounter >= ALERT_DURATION;
-        if(_statusCallback) _statusCallback(score, isAlert);
+        if (_statusCallback) _statusCallback(score, isAlert);
 
-        if(isAlert && typeof window.triggerEmergency === 'function'){
-          window.triggerEmergency('face');
-          alertCounter = 0; // Reset to prevent re-fire
-        }
       } else {
         // Still call callback with 0 score to hide loading screen even if no face
-        if(_statusCallback) _statusCallback(0, false);
+        if (_statusCallback) _statusCallback(0, false);
       }
       ctx.restore();
     });
 
     camera = new Camera(videoEl, {
-      onFrame: async function(){
-        if(running) await faceMesh.send({image: videoEl});
+      onFrame: async function () {
+        if (running) await faceMesh.send({ image: videoEl });
       },
       width: 480,
       height: 360
@@ -86,12 +84,12 @@ var HBVision = (function(){
     try {
       var dummyCanvas = document.createElement('canvas');
       dummyCanvas.width = 10; dummyCanvas.height = 10;
-      faceMesh.send({image: dummyCanvas});
-    } catch(e) {}
+      faceMesh.send({ image: dummyCanvas });
+    } catch (e) { }
   }
 
-  function start(videoEl, canvasEl){
-    if(!faceMesh) return;
+  function start(videoEl, canvasEl) {
+    if (!faceMesh) return;
     running = true;
     alertCounter = 0;
     canvasEl.width = canvasEl.clientWidth;
@@ -99,13 +97,13 @@ var HBVision = (function(){
     camera.start();
   }
 
-  function stop(){
+  function stop() {
     running = false;
     alertCounter = 0;
-    if(camera) camera.stop();
+    if (camera) camera.stop();
   }
 
-  function setCallback(cb){
+  function setCallback(cb) {
     _statusCallback = cb;
   }
 

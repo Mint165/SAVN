@@ -27,6 +27,7 @@
 
   <!-- LOGIN FORM -->
   <form method="post" action="/login" id="form-login" class="{% if tab=='register' %}hidden{% endif %}">
+    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
     <input type="hidden" name="action" value="login">
     <div class="form-group">
       <label><i class="fa-solid fa-user"></i> <span data-i18n="login_username">Tên đăng nhập</span></label>
@@ -46,6 +47,7 @@
 
   <!-- REGISTER FORM -->
   <form method="post" action="/login" id="form-register" class="{% if tab!='register' %}hidden{% endif %}">
+    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
     <input type="hidden" name="action" value="register">
     <div class="form-group">
       <label><i class="fa-solid fa-user"></i> <span data-i18n="login_username">Tên đăng nhập</span></label>

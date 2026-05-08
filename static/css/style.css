@@ -27,6 +27,8 @@ a{text-decoration:none;color:inherit}
 .btn-success{background:var(--success);color:#fff}
 .btn-danger-outline{background:transparent;border:2px solid var(--danger);color:var(--danger)}
 .btn-danger-outline:hover{background:var(--danger);color:#fff}
+.btn-danger-solid{background:var(--danger);color:#fff;box-shadow:0 4px 14px rgba(239,68,68,.28)}
+.btn-danger-solid:hover{background:#DC2626;transform:translateY(-2px);box-shadow:0 8px 22px rgba(239,68,68,.34)}
 
 /* CARD */
 .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow);transition:transform .25s cubic-bezier(.4,0,.2,1),box-shadow .25s}
@@ -433,6 +435,8 @@ input::-webkit-contacts-auto-fill-button, input::-webkit-credentials-auto-fill-b
 /* AI SYMPTOM CHECKER */
 .ai-checker-card:hover { border-color: #8B5CF6; }
 .ai-checker-card .card-icon.ai { color: #fff; }
+.ai-disclaimer-card{border-style:dashed}
+.ai-disclaimer-box{margin-bottom:1rem;padding:.85rem 1rem;border-radius:.75rem;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.22);color:var(--text);font-size:.88rem;line-height:1.5}
 
 .ai-tabs {
   display: flex;

@@ -7,9 +7,13 @@
   {% if not user.age %}
   <div class="alert alert-warning"><i class="fa-solid fa-triangle-exclamation"></i><div><span data-i18n="profile_incomplete">Bạn chưa hoàn thiện hồ sơ.</span> <a href="/profile" style="color:inherit;text-decoration:underline;font-weight:700" data-i18n="profile_update">Cập nhật ngay</a></div></div>
   {% endif %}
+  {% if error %}
+  <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i><div>{{ error }}</div></div>
+  {% endif %}
 
   <div class="card">
     <form method="post" action="/form">
+      <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
       <div class="form-section"><h3><i class="fa-solid fa-calendar-day"></i> <span data-i18n="form_date">Ngày Ghi Nhận</span></h3><div class="form-group" style="max-width:220px"><input type="date" name="record_date" id="record_date" required></div></div>
       <div class="form-section">
         <h3><i class="fa-solid fa-stethoscope"></i> <span data-i18n="form_vitals">Chỉ Số Sinh Tồn</span></h3>

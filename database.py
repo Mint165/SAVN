@@ -1,42 +1,61 @@
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+
 from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
 
-# Lấy URL kết nối từ biến môi trường (Ưu tiên Supabase Postgres)
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+DEFAULT_SQLITE_URL = "sqlite:///./heartbits.db"
 
-# Kiểm tra môi trường để quyết định database
-if not SQLALCHEMY_DATABASE_URL:
-    if os.environ.get("VERCEL"):
-        # Trên Vercel bắt buộc phải có DATABASE_URL để kết nối Supabase
-        raise RuntimeError("DATABASE_URL environment variable is missing on Vercel!")
-    else:
-        # Fallback về SQLite khi phát triển ở máy cá nhân (Local) nếu chưa config .env
-        SQLALCHEMY_DATABASE_URL = "sqlite:///./heartbits.db"
 
-# CHUẨN HÓA URL CHO SUPABASE (Fix lỗi dsn và postgres://)
-if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
-    # SQLAlchemy yêu cầu postgresql:// (có chữ l)
-    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
+def normalize_database_url(raw_url: str | None) -> str:
+    if not raw_url:
+        return DEFAULT_SQLITE_URL
 
-# Cấu hình Engine dựa trên loại Database
-if SQLALCHEMY_DATABASE_URL and "postgresql" in SQLALCHEMY_DATABASE_URL:
-    # Cấu hình tối ưu cho Supabase Postgres
+    url = raw_url.strip()
+    if not url:
+        return DEFAULT_SQLITE_URL
+
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+
+    if "[YOUR_PASSWORD]" in url or "YOUR_PASSWORD" in url:
+        print("DATABASE_URL still contains a placeholder password. Falling back to SQLite.")
+        return DEFAULT_SQLITE_URL
+
+    if not url.startswith("postgresql"):
+        return url
+
+    try:
+        parsed = make_url(url)
+    except Exception:
+        print("DATABASE_URL is malformed. Falling back to SQLite.")
+        return DEFAULT_SQLITE_URL
+
+    if not parsed.username or not parsed.password or not parsed.host:
+        print("DATABASE_URL is incomplete. Falling back to SQLite.")
+        return DEFAULT_SQLITE_URL
+
+    return url
+
+
+SQLALCHEMY_DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL"))
+
+if SQLALCHEMY_DATABASE_URL.startswith("postgresql"):
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL,
         pool_size=5,
         max_overflow=10,
         pool_timeout=30,
         pool_recycle=1800,
+        pool_pre_ping=True,
     )
 else:
-    # Cấu hình cho SQLite local
     engine = create_engine(
-        SQLALCHEMY_DATABASE_URL, 
-        connect_args={"check_same_thread": False}
+        SQLALCHEMY_DATABASE_URL,
+        connect_args={"check_same_thread": False},
     )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
