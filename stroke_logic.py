@@ -259,9 +259,19 @@ def calc_xai_groups(df_row: pd.DataFrame, meta) -> Dict[str, float]:
         "Giới tính": [n for n in feature_names if n.startswith("gender_")],
     }
 
+    # List of features that should be considered protective or baseline (never contribute to risk)
+    protective_features = [
+        "smoking_status_never smoked",
+        "work_type_Never_worked",
+        "work_type_children",
+        "ever_married_No"
+    ]
+
     return {
         group_name: round(
-            sum(max(0, coeffs.get(col, 0) * df_scaled[col].values[0]) for col in cols if col in df_scaled.columns),
+            sum(max(0, coeffs.get(col, 0) * df_scaled[col].values[0]) 
+                for col in cols 
+                if col in df_scaled.columns and col not in protective_features),
             2,
         )
         for group_name, cols in groups.items()
