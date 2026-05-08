@@ -141,6 +141,24 @@ def get_current_user(request: Request, db: Session):
     except Exception:
         return None
 
+def enrich_xai_payload(record, user):
+    if not record or not record.xai_data:
+        return None
+    try:
+        xai = json.loads(record.xai_data)
+        if "insights_vi" not in xai:
+            xai["insights_vi"] = stroke_logic.build_xai_insights(
+                xai.get("ml", {}), record.systolic, record.diastolic, 
+                record.avg_glucose_level, user.bmi, user.age, user.smoking_status, user.heart_disease or 0, lang="vi"
+            )
+            xai["insights_en"] = stroke_logic.build_xai_insights(
+                xai.get("ml", {}), record.systolic, record.diastolic, 
+                record.avg_glucose_level, user.bmi, user.age, user.smoking_status, user.heart_disease or 0, lang="en"
+            )
+        return xai
+    except Exception:
+        return None
+
 # ============================================================
 # AUTH ROUTES
 # ============================================================
@@ -269,14 +287,8 @@ async def home(request: Request, db: Session = Depends(get_db)):
     glucose_data = [r.avg_glucose_level for r in records]
     latest_record = records[-1] if records else None
     
-    xai_data = None
-    xai_factors = {}
-    if latest_record and latest_record.xai_data:
-        try:
-            xai_data = json.loads(latest_record.xai_data)
-            xai_factors = xai_data.get('ml', {})
-        except Exception:
-            pass
+    xai_data = enrich_xai_payload(latest_record, user)
+    xai_factors = xai_data.get('ml', {}) if xai_data else {}
 
     # Parse advice for latest record (bilingual)
     advice_list_vi = []
@@ -409,6 +421,15 @@ async def form_post(
         "Đau đầu (T)": stroke_logic.FAST_POINTS.get(fast_t, 0)
     }
     
+    insights_vi = stroke_logic.build_xai_insights(
+        xai_factors, systolic, diastolic, parsed_glucose, 
+        user.bmi, user.age, user.smoking_status, user.heart_disease or 0, lang="vi"
+    )
+    insights_en = stroke_logic.build_xai_insights(
+        xai_factors, systolic, diastolic, parsed_glucose, 
+        user.bmi, user.age, user.smoking_status, user.heart_disease or 0, lang="en"
+    )
+    
     xai_payload = json.dumps({
         "ml": xai_factors,
         "fast": fast_breakdown,
@@ -416,7 +437,9 @@ async def form_post(
         "fast_total": risk_summary["fast_sum"],
         "weighted_ml": risk_summary["weighted_ml"],
         "weighted_fast": risk_summary["weighted_fast"],
-        "final_score": risk_summary["final_score"]
+        "final_score": risk_summary["final_score"],
+        "insights_vi": insights_vi,
+        "insights_en": insights_en
     }, ensure_ascii=False)
 
     fields = dict(
@@ -569,9 +592,9 @@ async def report_get(request: Request, db: Session = Depends(get_db)):
         warn_en.append("HIGH stroke risk — schedule a doctor's appointment this week.")
     
     latest_record = records[-1] if records else None
-    xai_data = json.loads(latest_record.xai_data) if latest_record and latest_record.xai_data else None
-    xai_msg = stroke_logic.get_key_factors_msg(xai_data['ml'], 'vi') if xai_data else ""
-    xai_msg_en = stroke_logic.get_key_factors_msg(xai_data['ml'], 'en') if xai_data else ""
+    xai_data = enrich_xai_payload(latest_record, user)
+    xai_msg = stroke_logic.get_key_factors_msg(xai_data['ml'], 'vi') if xai_data and 'ml' in xai_data else ""
+    xai_msg_en = stroke_logic.get_key_factors_msg(xai_data['ml'], 'en') if xai_data and 'ml' in xai_data else ""
 
     return templates.TemplateResponse(request=request, name="report.html", context={
         "user": user, "records": records,

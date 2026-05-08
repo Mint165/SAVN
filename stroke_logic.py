@@ -261,7 +261,7 @@ def calc_xai_groups(df_row: pd.DataFrame, meta) -> Dict[str, float]:
 
     return {
         group_name: round(
-            sum(abs(coeffs.get(col, 0) * df_scaled[col].values[0]) for col in cols if col in df_scaled.columns),
+            sum(max(0, coeffs.get(col, 0) * df_scaled[col].values[0]) for col in cols if col in df_scaled.columns),
             2,
         )
         for group_name, cols in groups.items()
@@ -299,6 +299,37 @@ def get_key_factors_msg(xai_groups, lang='vi'):
             return f"Yếu tố quan trọng nhất cần lưu ý là <strong>{f1}</strong>."
         else:
             return f"The most significant factor to note is <strong>{f1}</strong>."
+
+def build_xai_insights(xai_groups, systolic, diastolic, avg_glucose, bmi, age, smoking_status, heart_disease, lang="vi"):
+    insights = []
+    sorted_factors = sorted(xai_groups.items(), key=lambda x: x[1], reverse=True)
+    top_factors = [f[0] for f in sorted_factors[:3] if f[1] > 0]
+    
+    for factor in top_factors:
+        if factor == "Huyết áp / Tim":
+            if systolic >= 140 or diastolic >= 90:
+                insights.append("Huyết áp của bạn đang ở mức cao, đây là một trong những nguyên nhân trực tiếp làm tăng gánh nặng lên mạch máu và nguy cơ đột quỵ." if lang == "vi" else "Your blood pressure is high, which directly increases the strain on your blood vessels and your stroke risk.")
+            elif heart_disease:
+                insights.append("Tiền sử bệnh tim mạch của bạn làm tăng nguy cơ cục máu đông, cần tuân thủ nghiêm ngặt phác đồ điều trị." if lang == "vi" else "Your history of heart disease increases the risk of blood clots; strict adherence to treatment is crucial.")
+        elif factor == "Đường huyết":
+            if avg_glucose is not None and avg_glucose > 140:
+                insights.append("Mức đường huyết cao đang gây xơ vữa động mạch, một yếu tố rủi ro thầm lặng rất đáng kể." if lang == "vi" else "High blood glucose contributes to atherosclerosis, a significant silent risk factor.")
+        elif factor == "Hút thuốc":
+            if smoking_status == "smokes":
+                insights.append("Việc hút thuốc lá đang làm suy yếu thành mạch máu của bạn một cách rõ rệt. Bỏ thuốc là cách tốt nhất để giảm ngay rủi ro này." if lang == "vi" else "Smoking is visibly weakening your blood vessel walls. Quitting is the best way to immediately reduce this risk.")
+        elif factor == "Chỉ số BMI":
+            if bmi is not None and bmi >= 25:
+                insights.append("Chỉ số BMI cho thấy bạn đang thừa cân, điều này ảnh hưởng gián tiếp qua việc tăng nguy cơ tiểu đường và huyết áp cao." if lang == "vi" else "Your BMI indicates you are overweight, which indirectly increases risk by promoting diabetes and high blood pressure.")
+        elif factor == "Tuổi tác":
+            if age >= 60:
+                insights.append("Tuổi tác là yếu tố rủi ro tự nhiên không thể thay đổi, nhưng nó nhắc nhở bạn cần chú trọng hơn vào việc tầm soát sức khỏe định kỳ." if lang == "vi" else "Age is an unchangeable natural risk factor, but it reminds you to prioritize regular health screenings.")
+        elif factor == "Nghề nghiệp":
+            insights.append("Nghề nghiệp hoặc môi trường làm việc có thể mang lại căng thẳng (stress) hoặc tính chất ít vận động, góp phần làm tăng nhẹ rủi ro." if lang == "vi" else "Your occupation or work environment may involve stress or a sedentary lifestyle, slightly increasing your risk.")
+            
+    if not insights:
+        insights.append("Các chỉ số của bạn khá ổn định và không có yếu tố nào gây nguy hiểm vượt mức." if lang == "vi" else "Your indicators are quite stable and there are no overwhelmingly dangerous factors.")
+        
+    return insights[:3]
 
 
 def generate_advice_en(

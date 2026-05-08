@@ -32,6 +32,22 @@
     <div class="xai-content">
       <p class="xai-description" data-i18n="xai_desc">Biểu đồ dưới đây cho thấy các nhóm yếu tố đóng góp bao nhiêu vào kết quả dự đoán mới nhất của bạn.</p>
       
+      {% if xai.insights_vi %}
+      <div style="margin-bottom:1.25rem">
+        <div class="xai-group-title"><i class="fa-solid fa-comments"></i> <span data-i18n="xai_insights_title">Giải thích cá nhân hóa</span></div>
+        <div data-lang="vi">
+          {% for insight in xai.insights_vi %}
+          <div class="advice-item" style="margin-bottom:.5rem">{{ insight }}</div>
+          {% endfor %}
+        </div>
+        <div data-lang="en" style="display:none">
+          {% for insight in xai.insights_en %}
+          <div class="advice-item" style="margin-bottom:.5rem">{{ insight }}</div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
       {% if xai_msg %}
       <div class="xai-summary-text" style="padding: 1rem; border-radius: 8px; background: rgba(139, 92, 246, 0.08); border-left: 4px solid var(--primary); margin-bottom: 1.5rem; font-size: 0.92rem; line-height: 1.6;">
         <span data-lang="vi">{{ xai_msg | safe }}</span>
@@ -41,8 +57,12 @@
 
       <div class="xai-group-title"><i class="fa-solid fa-stethoscope"></i> <span data-i18n="xai_fast_title">Triệu chứng FAST — Y khoa (60%)</span></div>
       {% for name, val in xai.fast.items() %}
+      {% set f_key = "fast_f_label" if "Face" in name or "Khuôn Mặt" in name or "(F)" in name else
+                     "fast_a_label" if "Arm" in name or "Cánh Tay" in name or "(A)" in name else
+                     "fast_s_label" if "Speech" in name or "Giọng Nói" in name or "(S)" in name else
+                     "fast_t_label" if "Time" in name or "Thời Gian" in name or "(T)" in name else "" %}
       <div class="xai-factor-item">
-        <div class="xai-factor-label"><span>{{ name }}</span> <strong>{{ val }}</strong></div>
+        <div class="xai-factor-label"><span {% if f_key %}data-i18n="{{ f_key }}"{% endif %}>{{ name }}</span> <strong>{{ val }}</strong></div>
         <div class="xai-factor-bar-bg"><div class="xai-factor-bar-fill bar-fast" style="width: {{ val }}%"></div></div>
       </div>
       {% endfor %}
@@ -50,8 +70,15 @@
       <div class="xai-group-title"><i class="fa-solid fa-microchip"></i> <span data-i18n="xai_ml_title">Yếu tố nền — Mô hình AI (40%)</span></div>
       {% for name, val in xai.ml.items() %}
       {% set scaled_val = (val * 10) | round(0) %}
+      {% set m_key = "factor_age" if name == "Tuổi tác" else 
+                     "factor_heart" if name == "Huyết áp / Tim" else 
+                     "factor_glucose" if name == "Đường huyết" else 
+                     "factor_bmi" if name == "Chỉ số BMI" else 
+                     "factor_smoking" if name == "Hút thuốc" else 
+                     "factor_work" if name == "Nghề nghiệp" else 
+                     "factor_gender" if name == "Giới tính" else "" %}
       <div class="xai-factor-item">
-        <div class="xai-factor-label"><span>{{ name }}</span> <strong>{{ val }}</strong></div>
+        <div class="xai-factor-label"><span {% if m_key %}data-i18n="{{ m_key }}"{% endif %}>{{ name }}</span> <strong>{{ val }}</strong></div>
         <div class="xai-factor-bar-bg"><div class="xai-factor-bar-fill bar-ml" style="width: {{ [scaled_val, 100] | min }}%"></div></div>
       </div>
       {% endfor %}
