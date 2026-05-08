@@ -11,16 +11,16 @@
     <div style="display:flex;align-items:center;gap:1rem">
       <div class="card-icon ai" style="background:linear-gradient(135deg,#8B5CF6,#EC4899);flex-shrink:0"><i class="fa-solid fa-brain"></i></div>
       <div style="flex:1">
-        <h3 style="font-size:1rem;font-weight:700;margin:0">AI Symptom Checker</h3>
-        <p class="text-muted" style="font-size:.82rem;margin:.25rem 0 0">Manual review only. Emergency support requires your confirmation.</p>
+        <h3 style="font-size:1rem;font-weight:700;margin:0" data-i18n="ai_checker">AI Symptom Checker</h3>
+        <p class="text-muted" style="font-size:.82rem;margin:.25rem 0 0" data-i18n="ai_screening_only">Manual review only. Emergency support requires your confirmation.</p>
       </div>
       <i class="fa-solid fa-chevron-right card-arrow"></i>
     </div>
   </div>
 
   <div class="card ai-disclaimer-card" style="margin-bottom:1.5rem">
-    <strong>Medical disclaimer.</strong>
-    <span style="display:block;margin-top:.4rem;color:var(--text-muted)">This screen is only a reference aid. It does not diagnose stroke and it will not automatically trigger emergency mode anymore.</span>
+    <strong data-i18n="medical_disclaimer">Medical disclaimer.</strong>
+    <span style="display:block;margin-top:.4rem;color:var(--text-muted)" data-i18n="medical_disclaimer_desc">This screen is only a reference aid. It does not diagnose stroke and it will not automatically trigger emergency mode anymore.</span>
   </div>
 
   <div id="aiCheckerModal" class="modal-overlay hidden">
@@ -29,7 +29,7 @@
         <h3><i class="fa-solid fa-brain" style="color:#8B5CF6"></i> AI Symptom Checker</h3>
         <button class="btn-close" onclick="closeAIChecker()"><i class="fa-solid fa-times"></i></button>
       </div>
-      <div class="ai-disclaimer-box">
+      <div class="ai-disclaimer-box" data-i18n="ai_screening_only">
         AI screening only. Please review the result manually before activating emergency support.
       </div>
 
@@ -46,30 +46,30 @@
         <div class="ai-camera-container">
           <video id="aiVideo" autoplay playsinline muted style="display:none"></video>
           <canvas id="aiCanvas"></canvas>
-          <div id="aiLoading" class="ai-loading"><div class="spinner"></div><p>Loading AI...</p></div>
+          <div id="aiLoading" class="ai-loading"><div class="spinner"></div><p data-i18n="ai_loading">Loading AI...</p></div>
         </div>
         <div class="ai-meter">
           <div class="label-group">
-            <span>Symmetry</span>
+            <span data-i18n="ai_face_score">Symmetry</span>
             <span id="aiFaceScore">0%</span>
           </div>
           <div class="meter-bar"><div id="aiFaceBar" class="meter-fill"></div></div>
-          <div id="aiFaceStatus" class="ai-status ok">Face appears balanced</div>
+          <div id="aiFaceStatus" class="ai-status ok" data-i18n="ai_face_balanced">Face appears balanced</div>
         </div>
       </div>
 
       <div id="panelVoice" class="ai-panel hidden">
         <div class="ai-voice-section">
-          <p style="text-align:center;margin-bottom:.5rem">Please read the sentence below:</p>
+          <p style="text-align:center;margin-bottom:.5rem" data-i18n="ai_voice_read">Please read the sentence below:</p>
           <div class="ai-reference-sentence" id="aiRefSentence">The weather is clear today</div>
           <button class="btn btn-primary" onclick="startVoiceTest()" id="voiceStartBtn" type="button" style="width:100%;margin-top:1rem">
-            <i class="fa-solid fa-microphone"></i> Start speaking
+            <i class="fa-solid fa-microphone"></i> <span data-i18n="ai_voice_btn">Start speaking</span>
           </button>
           <div id="voiceResult" class="hidden" style="margin-top:1rem">
             <div class="ai-voice-transcript" id="voiceTranscript"></div>
             <div class="ai-meter" style="margin-top:.75rem">
               <div class="label-group">
-                <span>Accuracy</span>
+                <span data-i18n="ai_voice_score">Accuracy</span>
                 <span id="aiVoiceScore">-</span>
               </div>
               <div class="meter-bar"><div id="aiVoiceBar" class="meter-fill"></div></div>
@@ -82,9 +82,9 @@
       <div id="aiEmergencyAlert" class="ai-emergency-alert hidden">
         <i class="fa-solid fa-triangle-exclamation"></i>
         <div>
-          <div id="aiEmergencyTitle">AI detected a possible warning sign.</div>
+          <div id="aiEmergencyTitle" data-i18n="ai_detected_warning">AI detected a possible warning sign.</div>
           <div id="aiEmergencyReason" style="margin-top:.5rem;font-size:.9rem;font-weight:600"></div>
-          <button id="aiEmergencyConfirmBtn" class="btn btn-danger-solid mt-2" type="button" onclick="confirmEmergencyFromAI()">Confirm symptoms manually</button>
+          <button id="aiEmergencyConfirmBtn" class="btn btn-danger-solid mt-2" type="button" onclick="confirmEmergencyFromAI()" data-i18n="confirm_manually">Confirm symptoms manually</button>
         </div>
       </div>
     </div>
@@ -238,16 +238,24 @@ function resetEmergencyPrompt(){
 
 function showEmergencyPrompt(source, reason){
   _manualEmergencySource = source || 'manual';
-  document.getElementById('aiEmergencyReason').textContent = reason || 'Please verify the symptom yourself before continuing.';
+  var lang = localStorage.getItem('lang') || 'vi';
+  var defaultReason = lang === 'en' ? 'Please verify the symptom yourself before continuing.' : 'Vui lòng tự kiểm tra triệu chứng trước khi tiếp tục.';
+  document.getElementById('aiEmergencyReason').textContent = reason || defaultReason;
   document.getElementById('aiEmergencyAlert').classList.remove('hidden');
 }
 
 function confirmEmergencyFromAI(){
   var btn = document.getElementById('aiEmergencyConfirmBtn');
+  var lang = localStorage.getItem('lang') || 'vi';
+  var d = I18N[lang] || I18N.vi;
+
   btn.disabled = true;
-  btn.textContent = 'Activating...';
+  btn.textContent = d.activating || 'Activating...';
   window.confirmEmergencySymptoms(_manualEmergencySource)
-    .catch(function(){ btn.disabled = false; btn.textContent = 'Confirm symptoms manually'; });
+    .catch(function(){ 
+      btn.disabled = false; 
+      btn.textContent = d.confirm_manually || 'Confirm symptoms manually'; 
+    });
 }
 
 function startFaceScan(){
@@ -255,6 +263,9 @@ function startFaceScan(){
   var canvasEl = document.getElementById('aiCanvas');
   var loading = document.getElementById('aiLoading');
   if(typeof HBVision === 'undefined') return;
+
+  var lang = localStorage.getItem('lang') || 'vi';
+  var d = I18N[lang] || I18N.vi;
 
   HBVision.setCallback(function(score, isAlert){
     loading.style.display = 'none';
@@ -264,15 +275,16 @@ function startFaceScan(){
     bar.style.background = isAlert ? 'var(--danger)' : 'var(--primary)';
     var statusEl = document.getElementById('aiFaceStatus');
     if(score > 15){
-      statusEl.textContent = 'Possible asymmetry detected';
+      statusEl.textContent = d.ai_face_asymmetry || 'Possible asymmetry detected';
       statusEl.className = 'ai-status alert';
     } else {
-      statusEl.textContent = 'Face appears balanced';
+      statusEl.textContent = d.ai_face_balanced || 'Face appears balanced';
       statusEl.className = 'ai-status ok';
       resetEmergencyPrompt();
     }
     if(isAlert){
-      showEmergencyPrompt('face', 'Sustained facial asymmetry detected. Please confirm manually before emergency support starts.');
+      var reason = lang === 'en' ? 'Sustained facial asymmetry detected. Please confirm manually before emergency support starts.' : 'Phát hiện mất cân đối khuôn mặt kéo dài. Vui lòng xác nhận thủ công trước khi kích hoạt hỗ trợ khẩn cấp.';
+      showEmergencyPrompt('face', reason);
     }
   });
 
@@ -289,8 +301,11 @@ function startVoiceTest(){
     alert('Speech recognition is not supported in this browser.');
     return;
   }
+  var lang = localStorage.getItem('lang') || 'vi';
+  var d = I18N[lang] || I18N.vi;
+  
   btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Listening...';
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + (d.ai_voice_listening || 'Listening...');
   HBSpeech.start(function(result){
     btn.disabled = false;
     btn.innerHTML = '<i class="fa-solid fa-microphone"></i> Start speaking';
@@ -303,13 +318,14 @@ function startVoiceTest(){
     bar.style.background = result.isNormal ? 'var(--primary)' : 'var(--danger)';
     var statusEl = document.getElementById('aiVoiceStatus');
     if(result.isNormal){
-      statusEl.textContent = 'Speech appears normal';
+      statusEl.textContent = d.ai_voice_normal_speech || 'Speech appears normal';
       statusEl.className = 'ai-status ok';
       resetEmergencyPrompt();
     } else {
-      statusEl.textContent = 'Possible speech abnormality detected';
+      statusEl.textContent = d.ai_voice_abnormal || 'Possible speech abnormality detected';
       statusEl.className = 'ai-status alert';
-      showEmergencyPrompt('speech', 'Voice similarity dropped below the safe threshold. Please confirm manually before emergency support starts.');
+      var reason = lang === 'en' ? 'Voice similarity dropped below the safe threshold. Please confirm manually before emergency support starts.' : 'Độ tương đồng giọng nói thấp hơn ngưỡng an toàn. Vui lòng xác nhận thủ công trước khi kích hoạt hỗ trợ khẩn cấp.';
+      showEmergencyPrompt('speech', reason);
     }
   });
 }

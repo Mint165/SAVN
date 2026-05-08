@@ -114,6 +114,13 @@
   <!-- GOLDEN HOUR (global, persistent across all pages) -->
   <div id="golden-hour-overlay" class="hidden"></div>
   <div id="golden-hour-timer" class="hidden">
+    <svg class="progress-ring" width="120" height="120">
+      <circle class="progress-ring__circle" stroke="#EF4444" stroke-width="8" fill="transparent" r="52" cx="60" cy="60"/>
+    </svg>
+    <div class="timer-text">
+      <div class="timer-title" data-i18n="golden_hour">GIỜ VÀNG</div>
+      <div id="timer-countdown">00:00:00</div>
+    </div>
   </div>
   <a id="sos-btn" class="sos-floating-btn hidden" href="#" onclick="sendSOS(event)">
     <i class="fa-solid fa-phone-volume"></i> <span data-i18n="sos_btn">GỬI SOS</span>
@@ -176,7 +183,13 @@
         xai_title: "Phân tích chi tiết XAI", xai_desc: "Biểu đồ dưới đây cho thấy các nhóm yếu tố đóng góp bao nhiêu vào kết quả dự đoán của bạn.", xai_insights_title: "Giải thích cá nhân hóa", xai_fast_title: "Triệu chứng FAST — Y khoa (60%)", xai_ml_title: "Yếu tố nền — Mô hình AI (40%)",
         xai_formula_label: "Tính theo:", xai_formula_val: "hệ số hồi quy × giá trị đã chuẩn hóa", xai_total_score: "Tổng điểm:", xai_ml_label: "ML (40%):", xai_fast_label: "FAST (60%):",
         factor_age: "Tuổi tác", factor_heart: "Huyết áp / Tim", factor_glucose: "Đường huyết", factor_bmi: "Chỉ số BMI", factor_smoking: "Hút thuốc", factor_work: "Nghề nghiệp", factor_gender: "Giới tính",
-        dt_up: "Tăng", dt_no_change: "Không đổi"
+        dt_up: "Tăng", dt_no_change: "Không đổi",
+        medical_disclaimer: "Cảnh báo y tế", medical_disclaimer_desc: "Màn hình này chỉ mang tính chất tham khảo. Nó không thay thế chẩn đoán y tế và sẽ không tự động kích hoạt chế độ khẩn cấp.",
+        ai_detected_warning: "AI phát hiện dấu hiệu cảnh báo tiềm ẩn.", ai_screening_only: "Chỉ là kết quả sàng lọc AI. Vui lòng xem lại kết quả thủ công trước khi kích hoạt hỗ trợ khẩn cấp.",
+        confirm_manually: "Xác nhận triệu chứng thủ công", activating: "Đang kích hoạt...",
+        ai_loading: "Đang tải AI...", ai_face_balanced: "Khuôn mặt cân đối", ai_face_asymmetry: "Phát hiện mất cân đối",
+        ai_voice_read: "Vui lòng đọc câu dưới đây:", ai_voice_normal_speech: "Giọng nói bình thường", ai_voice_abnormal: "Phát hiện giọng nói bất thường!",
+        ai_verify_manual: "Vui lòng tự kiểm tra triệu chứng trước khi tiếp tục.", ai_manual_confirm_desc: "Phát hiện triệu chứng. Vui lòng xác nhận thủ công trước khi kích hoạt hỗ trợ khẩn cấp."
       },
       en: {
         nav_dash: "Dashboard", nav_entry: "Daily Entry", nav_ex: "Exercise", nav_report: "Report", nav_schedule: "Schedule", nav_profile: "Profile",
@@ -229,7 +242,13 @@
         xai_title: "XAI Detailed Analysis", xai_desc: "The chart below shows how each group of factors contributes to your prediction.", xai_insights_title: "Personalized Insights", xai_fast_title: "FAST Symptoms — Medical (60%)", xai_ml_title: "Background Factors — AI Model (40%)",
         xai_formula_label: "Calculated by:", xai_formula_val: "regression coeff × normalized value", xai_total_score: "Total score:", xai_ml_label: "ML (40%):", xai_fast_label: "FAST (60%):",
         factor_age: "Age", factor_heart: "BP / Heart", factor_glucose: "Blood Glucose", factor_bmi: "BMI Index", factor_smoking: "Smoking", factor_work: "Occupation", factor_gender: "Gender",
-        dt_up: "Increase", dt_no_change: "No change"
+        dt_up: "Increase", dt_no_change: "No change",
+        medical_disclaimer: "Medical disclaimer", medical_disclaimer_desc: "This screen is only a reference aid. It does not diagnose stroke and it will not automatically trigger emergency mode anymore.",
+        ai_detected_warning: "AI detected a possible warning sign.", ai_screening_only: "AI screening only. Please review the result manually before activating emergency support.",
+        confirm_manually: "Confirm symptoms manually", activating: "Activating...",
+        ai_loading: "Loading AI...", ai_face_balanced: "Face appears balanced", ai_face_asymmetry: "Possible asymmetry detected",
+        ai_voice_read: "Please read the sentence below:", ai_voice_normal_speech: "Speech appears normal", ai_voice_abnormal: "Possible speech abnormality detected!",
+        ai_verify_manual: "Please verify the symptom yourself before continuing.", ai_manual_confirm_desc: "Symptom detected. Please confirm manually before emergency support starts."
       }
     };
     function changeLang(l) {
@@ -411,6 +430,7 @@
       if (!overlay || !timer) return;
 
       var circle = document.querySelector('.progress-ring__circle');
+      if (!circle) return; // Guard for missing circle
       var r = circle.r.baseVal.value;
       var circ = 2 * Math.PI * r;
       circle.style.strokeDasharray = circ + ' ' + circ;

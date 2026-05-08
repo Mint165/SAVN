@@ -8,7 +8,7 @@
     <div class="streak-num">🔥 {{ user.exercise_streak or 0 }}</div>
     <p data-i18n="exercise_banner_streak">Ngay tap luyen lien tiep</p>
     {% if already_done %}
-    <div style="margin-top:.75rem;background:rgba(255,255,255,.2);border-radius:.5rem;padding:.5rem 1rem;display:inline-block;font-weight:700">Done ({{ today }})</div>
+    <div style="margin-top:.75rem;background:rgba(255,255,255,.2);border-radius:.5rem;padding:.5rem 1rem;display:inline-block;font-weight:700" data-i18n="exercise_banner_done">Done ({{ today }})</div>
     {% endif %}
   </div>
 
@@ -39,11 +39,11 @@
 
   <div class="done-btn-area card" style="text-align:center;padding:2rem">
     {% if already_done %}
-    <div class="btn btn-success" style="opacity:.6;cursor:default;font-size:1.05rem"><i class="fa-solid fa-check-circle"></i> Done today</div>
-    <p class="text-muted" style="margin-top:1rem">Come back tomorrow to continue your streak.</p>
+    <div class="btn btn-success" style="opacity:.6;cursor:default;font-size:1.05rem"><i class="fa-solid fa-check-circle"></i> <span data-i18n="exercise_done_already">Done today</span></div>
+    <p class="text-muted" style="margin-top:1rem" data-i18n="exercise_comeback">Come back tomorrow to continue your streak.</p>
     {% else %}
-    <p style="margin-bottom:1.25rem;font-size:.95rem;color:var(--text-muted)">Tap xong roi? Bam nut de ghi nhan.</p>
-    <button class="btn btn-primary" style="font-size:1.05rem;padding:1rem 2rem" onclick="completeExercise()"><i class="fa-solid fa-fire"></i> Mark Today Complete</button>
+    <p style="margin-bottom:1.25rem;font-size:.95rem;color:var(--text-muted)" data-i18n="exercise_done_msg">Tap xong roi? Bam nut de ghi nhan.</p>
+    <button class="btn btn-primary" style="font-size:1.05rem;padding:1rem 2rem" onclick="completeExercise()"><i class="fa-solid fa-fire"></i> <span data-i18n="exercise_done_btn">Mark Today Complete</span></button>
     {% endif %}
   </div>
 </div>
