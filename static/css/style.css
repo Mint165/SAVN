@@ -31,9 +31,9 @@ a{text-decoration:none;color:inherit}
 /* CARD */
 .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;box-shadow:var(--shadow);transition:transform .25s cubic-bezier(.4,0,.2,1),box-shadow .25s}
 .card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(16,185,129,0.12)}
-.card-arrow { position: relative; right: 2.5rem; opacity: 0.6; transition: all 0.2s; }
+.card-arrow { position: relative; right: 0.8rem; opacity: 0.6; transition: all 0.2s; }
 .card:hover .card-arrow { transform: translateX(5px); opacity: 1; color: var(--primary); }
-.xai-chevron{margin-left:auto;position:relative;right:2.5rem;transition:transform .3s}
+.xai-chevron{margin-left:auto;transition:transform .3s}
 
 
 /* UTILITY */
