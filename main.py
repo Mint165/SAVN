@@ -878,8 +878,21 @@ async def form_post(request: Request, db: Session = Depends(get_db)):
     else:
         db.add(models.HealthRecord(user_id=user.id, date=payload.record_date, **fields))
 
-    if risk_summary["final_score"] >= 70 and not user.golden_hour_start:
-        user.golden_hour_start = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    # Automatic Golden Hour trigger (threshold 70%)
+    should_trigger = risk_summary["final_score"] >= 70
+    if should_trigger:
+        # Re-trigger if not started OR if the previous one is older than 4.5 hours
+        is_expired = False
+        if user.golden_hour_start:
+            try:
+                start_dt = datetime.datetime.fromisoformat(user.golden_hour_start)
+                if (datetime.datetime.now(datetime.timezone.utc) - start_dt).total_seconds() > 4.5 * 3600:
+                    is_expired = True
+            except Exception:
+                is_expired = True
+        
+        if not user.golden_hour_start or is_expired:
+            user.golden_hour_start = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     db.commit()
     return RedirectResponse(url="/", status_code=302)

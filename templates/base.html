@@ -412,7 +412,7 @@
       var startStr = localStorage.getItem('goldenHourStart');
       {% endif %}
 
-      if (!startStr) return;
+      if (!startStr || startStr === 'None' || startStr === 'null') return;
 
       // Capture GPS immediately when Golden Hour is active
       captureGPS();
@@ -422,11 +422,17 @@
       if (sosBtn) sosBtn.classList.remove('hidden');
 
       // Handle ISO strings or timestamps
-      var startTime = isNaN(startStr) ? new Date(startStr).getTime() : parseInt(startStr, 10);
+      var startTime = 0;
+      try {
+        startTime = isNaN(startStr) ? new Date(startStr).getTime() : parseInt(startStr, 10);
+      } catch(e) { return; }
+      
+      if (!startTime || isNaN(startTime)) return;
+
       var elapsed = Math.floor((Date.now() - startTime) / 1000);
       var total = 4.5 * 3600; // 4.5 hours
 
-      if (elapsed >= total) {
+      if (elapsed >= total || elapsed < -60) { // Also return if date is in far future
         localStorage.removeItem('goldenHourStart');
         return;
       }
@@ -436,8 +442,10 @@
       if (!overlay || !timer) return;
 
       var circle = document.querySelector('.progress-ring__circle');
-      if (!circle) return; // Guard for missing circle
-      var r = circle.r.baseVal.value;
+      if (!circle) return;
+      
+      // Ensure circle has correct properties even if CSS is slow
+      var r = 52; 
       var circ = 2 * Math.PI * r;
       circle.style.strokeDasharray = circ + ' ' + circ;
 
