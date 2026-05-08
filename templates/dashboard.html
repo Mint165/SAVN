@@ -254,10 +254,15 @@
 </div>
 
 <script>
-var dates={{ dates|safe }};var systolicD={{ systolic|safe }};var diastolicD={{ diastolic|safe }};var strokeScores={{ stroke_scores|safe }};var glucoseD={{ glucose_data|safe }};
+var dates = {{ dates|safe if dates else '[]' }};
+var systolicD = {{ systolic|safe if systolic else '[]' }};
+var diastolicD = {{ diastolic|safe if diastolic else '[]' }};
+var strokeScores = {{ stroke_scores|safe if stroke_scores else '[]' }};
+var glucoseD = {{ glucose_data|safe if glucose_data else '[]' }};
+
 {% if latest_record %}
-var latestScore={{ latest_record.final_score }};
-var latestRecord = { systolic: {{ latest_record.systolic }}, diastolic: {{ latest_record.diastolic }}, avg_glucose_level: {{ latest_record.avg_glucose_level or 0 }} };
+var latestScore = {{ latest_record.final_score or 0 }};
+var latestRecord = { systolic: {{ latest_record.systolic or 0 }}, diastolic: {{ latest_record.diastolic or 0 }}, avg_glucose_level: {{ latest_record.avg_glucose_level or 0 }} };
 {% else %}
 var latestScore=0;
 var latestRecord = null;

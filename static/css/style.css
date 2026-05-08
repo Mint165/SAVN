@@ -235,8 +235,10 @@ a{text-decoration:none;color:inherit}
 
 /* CHARTS */
 .charts-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.25rem;margin-bottom:2rem}
-.chart-card h3{font-size:.95rem;font-weight:700;margin-bottom:1.25rem;display:flex;align-items:center;gap:.5rem}
+.chart-card{height:380px;display:flex;flex-direction:column}
+.chart-card h3{font-size:.95rem;font-weight:700;margin-bottom:1.25rem;display:flex;align-items:center;gap:.5rem;flex-shrink:0}
 .chart-card h3 i{color:var(--primary)}
+.chart-card canvas { flex: 1; min-height: 0; width: 100% !important; }
 
 /* ALERT */
 .alert{padding:1rem 1.25rem;border-radius:.75rem;margin-bottom:1.5rem;display:flex;align-items:flex-start;gap:.85rem;font-weight:600;animation:slideIn .3s ease}
