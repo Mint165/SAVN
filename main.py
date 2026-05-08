@@ -409,7 +409,7 @@ async def form_post(
     if ml_model and ml_meta:
         feature_df = stroke_logic.build_feature_row(
             user.age, user.gender, user.work_type, user.smoking_status,
-            user.hypertension_history or 0, user.heart_disease or 0,
+            hypertension, user.heart_disease or 0,
             parsed_glucose, user.bmi, ml_meta["feature_names"]
         )
         xai_factors = stroke_logic.calc_xai_groups(feature_df, ml_meta)
@@ -446,7 +446,7 @@ async def form_post(
         age=user.age, gender=user.gender, work_type=user.work_type,
         ever_married=user.ever_married, residence_type=user.residence_type,
         smoking_status=user.smoking_status, systolic=systolic, diastolic=diastolic,
-        heart_disease=user.heart_disease, avg_glucose_level=parsed_glucose,
+        heart_disease=user.heart_disease, hypertension=hypertension, avg_glucose_level=parsed_glucose,
         bmi=user.bmi, fast_f=fast_f, fast_a=fast_a, fast_s=fast_s, fast_t=fast_t,
         ml_score=risk_summary["ml_score"], fast_sum=risk_summary["fast_sum"],
         combined_score=risk_summary["combined_score"], final_score=risk_summary["final_score"],

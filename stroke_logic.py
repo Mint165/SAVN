@@ -83,8 +83,9 @@ def build_feature_row(
 
 def get_ml_probability(df_row: pd.DataFrame, scaler, model) -> float:
     df_scaled = df_row.copy()
-    scaled_cols = ["age", "avg_glucose_level", "bmi"]
-    df_scaled[scaled_cols] = scaler.transform(df_row[scaled_cols])
+    if scaler is not None:
+        scaled_cols = ["age", "avg_glucose_level", "bmi"]
+        df_scaled[scaled_cols] = scaler.transform(df_row[scaled_cols])
     return float(model.predict_proba(df_scaled)[0][1])
 
 
@@ -340,6 +341,87 @@ def build_xai_insights(xai_groups, systolic, diastolic, avg_glucose, bmi, age, s
         insights.append("Các chỉ số của bạn khá ổn định và không có yếu tố nào gây nguy hiểm vượt mức." if lang == "vi" else "Your indicators are quite stable and there are no overwhelmingly dangerous factors.")
         
     return insights[:3]
+
+
+def calc_xai_groups(df_row: pd.DataFrame, meta) -> Dict[str, float]:
+    importances = meta.get("model_feature_importances") or {}
+    coeffs = meta.get("model_coefficients") or {}
+    scaler = meta.get("scaler")
+    feature_names = meta["feature_names"]
+
+    groups = {
+        "Tuá»•i tÃ¡c": ["age"],
+        "Huyáº¿t Ã¡p / Tim": ["hypertension", "heart_disease"],
+        "ÄÆ°á»ng huyáº¿t": ["avg_glucose_level"],
+        "Chá»‰ sá»‘ BMI": ["bmi"],
+        "HÃºt thuá»‘c": [n for n in feature_names if n.startswith("smoking_status_")],
+        "Nghá» nghiá»‡p": [n for n in feature_names if n.startswith("work_type_")],
+        "Giá»›i tÃ­nh": [n for n in feature_names if n.startswith("gender_")],
+    }
+    protective_features = {
+        "smoking_status_never smoked",
+        "work_type_Never_worked",
+        "work_type_children",
+        "ever_married_No",
+    }
+    group_weights = {
+        "Nghá» nghiá»‡p": 0.35,
+        "Giá»›i tÃ­nh": 0.2,
+    }
+
+    def local_intensity(col: str) -> float:
+        if col not in df_row.columns:
+            return 0.0
+        value = float(df_row[col].values[0])
+        if col in {"hypertension", "heart_disease"}:
+            return 1.0 if value > 0 else 0.0
+        if col.startswith(("gender_", "work_type_", "smoking_status_")):
+            return 1.0 if value > 0 and col not in protective_features else 0.0
+
+        stats = (meta.get("feature_stats") or {}).get(col, {})
+        if col == "age":
+            floor = float(stats.get("median", 50.0))
+            ceiling = float(stats.get("max", 90.0))
+        elif col == "avg_glucose_level":
+            floor = 110.0
+            ceiling = float(stats.get("max", 260.0))
+        elif col == "bmi":
+            floor = 24.0
+            ceiling = float(stats.get("max", 45.0))
+        else:
+            floor = float(stats.get("min", 0.0))
+            ceiling = float(stats.get("max", max(value, 1.0)))
+        if ceiling <= floor:
+            return 0.0
+        return max(0.0, min(1.0, (value - floor) / (ceiling - floor)))
+
+    if importances:
+        return {
+            group_name: float(round(
+                sum(importances.get(col, 0.0) * local_intensity(col) * 100 for col in cols)
+                * group_weights.get(group_name, 1.0),
+                2,
+            ))
+            for group_name, cols in groups.items()
+        }
+
+    df_scaled = df_row.copy()
+    if scaler is not None:
+        scaled_cols = ["age", "avg_glucose_level", "bmi"]
+        df_scaled[scaled_cols] = scaler.transform(df_row[scaled_cols])
+
+    return {
+        group_name: float(round(
+            sum(
+                max(0.0, coeffs.get(col, 0.0) * df_scaled[col].values[0])
+                for col in cols
+                if col in df_scaled.columns and col not in protective_features
+            )
+            * group_weights.get(group_name, 1.0),
+            2,
+        ))
+        for group_name, cols in groups.items()
+    }
 
 
 def generate_advice_en(
