@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
       borderColor: color,
       backgroundColor: hasTrend ? fillColor : 'transparent',
       fill: hasTrend,
-      tension: 0.4, // Smoother lines
+      tension: 0, // Sharper lines
       spanGaps: true,
       showLine: true, // Always show line even if 1 point (Chart.js handles it)
       borderWidth: 3,
