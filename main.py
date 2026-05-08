@@ -1147,7 +1147,18 @@ async def trigger_golden_hour_api(request: Request, db: Session = Depends(get_db
     except ValidationError as exc:
         return JSONResponse({"error": flatten_validation_error(exc)}, status_code=422)
 
-    if not user.golden_hour_start:
+    # Re-trigger if not started OR if the previous one is older than 4.5 hours
+    is_expired = False
+    if user.golden_hour_start:
+        try:
+            start_dt = datetime.datetime.fromisoformat(user.golden_hour_start)
+            if (datetime.datetime.now(datetime.timezone.utc) - start_dt).total_seconds() > 4.5 * 3600:
+                is_expired = True
+        except Exception:
+            is_expired = True
+    
+    if not user.golden_hour_start or is_expired:
         user.golden_hour_start = datetime.datetime.now(datetime.timezone.utc).isoformat()
         db.commit()
+    
     return JSONResponse({"ok": True, "start": user.golden_hour_start, "source": payload.source})
