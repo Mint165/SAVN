@@ -7,7 +7,12 @@
     {% if latest_record %}<div class="date-display">{{ latest_record.date.strftime("%d/%m/%Y") }}</div>{% endif %}
   </div>
 
-  <div class="card ai-checker-card" onclick="openAIChecker()" style="margin-bottom:1rem;cursor:pointer">
+  <div class="card ai-disclaimer-card" style="margin-bottom:1rem">
+    <strong data-i18n="medical_disclaimer">Medical disclaimer.</strong>
+    <span style="display:block;margin-top:.4rem;color:var(--text-muted)" data-i18n="medical_disclaimer_desc">This screen is only a reference aid. It does not diagnose stroke and it will not automatically trigger emergency mode anymore.</span>
+  </div>
+
+  <div class="card ai-checker-card" onclick="openAIChecker()" style="margin-bottom:1.5rem;cursor:pointer">
     <div style="display:flex;align-items:center;gap:1rem">
       <div class="card-icon ai" style="background:linear-gradient(135deg,#8B5CF6,#EC4899);flex-shrink:0"><i class="fa-solid fa-brain"></i></div>
       <div style="flex:1">
@@ -16,11 +21,6 @@
       </div>
       <i class="fa-solid fa-chevron-right card-arrow"></i>
     </div>
-  </div>
-
-  <div class="card ai-disclaimer-card" style="margin-bottom:1.5rem">
-    <strong data-i18n="medical_disclaimer">Medical disclaimer.</strong>
-    <span style="display:block;margin-top:.4rem;color:var(--text-muted)" data-i18n="medical_disclaimer_desc">This screen is only a reference aid. It does not diagnose stroke and it will not automatically trigger emergency mode anymore.</span>
   </div>
 
   <div id="aiCheckerModal" class="modal-overlay hidden">
@@ -140,23 +140,23 @@
       {% endif %}
       {% if xai.insights_vi %}
       <div style="margin-bottom:1rem">
-        <div class="xai-group-title"><i class="fa-solid fa-comments"></i> Insights</div>
+        <div class="xai-group-title"><i class="fa-solid fa-comments"></i> <span data-i18n="xai_insights_title">Insights</span></div>
         <div data-lang="vi">{% for insight in xai.insights_vi %}<div class="advice-item" style="margin-bottom:.5rem">{{ insight }}</div>{% endfor %}</div>
         <div data-lang="en" style="display:none">{% for insight in xai.insights_en %}<div class="advice-item" style="margin-bottom:.5rem">{{ insight }}</div>{% endfor %}</div>
       </div>
       {% endif %}
-      <div class="xai-group-title">FAST factors</div>
+      <div class="xai-group-title" data-i18n="xai_fast_group">FAST factors</div>
       {% for name, val in xai.fast.items() %}
       <div class="xai-factor-item">
-        <div class="xai-factor-label"><span>{{ name }}</span> <strong>{{ val }}</strong></div>
+        <div class="xai-factor-label"><span data-i18n="{{ name }}">{{ name }}</span> <strong>{{ val }}</strong></div>
         <div class="xai-factor-bar-bg"><div class="xai-factor-bar-fill bar-fast" style="width: {{ val }}%"></div></div>
       </div>
       {% endfor %}
-      <div class="xai-group-title">Model factors</div>
+      <div class="xai-group-title" data-i18n="xai_ml_group">Model factors</div>
       {% for name, val in xai.ml.items() %}
       {% set scaled_val = (val * 10) | round(0) %}
       <div class="xai-factor-item">
-        <div class="xai-factor-label"><span>{{ name }}</span> <strong>{{ val }}</strong></div>
+        <div class="xai-factor-label"><span data-i18n="{{ name }}">{{ name }}</span> <strong>{{ val }}</strong></div>
         <div class="xai-factor-bar-bg"><div class="xai-factor-bar-fill bar-ml" style="width: {{ [scaled_val, 100] | min }}%"></div></div>
       </div>
       {% endfor %}

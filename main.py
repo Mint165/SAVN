@@ -458,10 +458,10 @@ def build_xai_payload_from_record(record, user):
     return {
         "ml": xai_factors,
         "fast": {
-            "Mouth (F)": stroke_logic.FAST_POINTS.get(record.fast_f or 0, 0),
-            "Arm/Leg (A)": stroke_logic.FAST_POINTS.get(record.fast_a or 0, 0),
-            "Speech (S)": stroke_logic.FAST_POINTS.get(record.fast_s or 0, 0),
-            "Time/Confusion (T)": stroke_logic.FAST_POINTS.get(record.fast_t or 0, 0),
+            "fast_f_label": stroke_logic.FAST_POINTS.get(record.fast_f or 0, 0),
+            "fast_a_label": stroke_logic.FAST_POINTS.get(record.fast_a or 0, 0),
+            "fast_s_label": stroke_logic.FAST_POINTS.get(record.fast_s or 0, 0),
+            "fast_t_label": stroke_logic.FAST_POINTS.get(record.fast_t or 0, 0),
         },
         "ml_total": record.ml_score or 0,
         "fast_total": record.fast_sum or 0,
@@ -802,10 +802,10 @@ async def form_post(request: Request, db: Session = Depends(get_db)):
         xai_factors = stroke_logic.calc_xai_groups(feature_df, ml_meta)
 
     fast_breakdown = {
-        "Mouth (F)": stroke_logic.FAST_POINTS.get(payload.fast_f, 0),
-        "Arm/Leg (A)": stroke_logic.FAST_POINTS.get(payload.fast_a, 0),
-        "Speech (S)": stroke_logic.FAST_POINTS.get(payload.fast_s, 0),
-        "Time/Confusion (T)": stroke_logic.FAST_POINTS.get(payload.fast_t, 0),
+        "fast_f_label": stroke_logic.FAST_POINTS.get(payload.fast_f, 0),
+        "fast_a_label": stroke_logic.FAST_POINTS.get(payload.fast_a, 0),
+        "fast_s_label": stroke_logic.FAST_POINTS.get(payload.fast_s, 0),
+        "fast_t_label": stroke_logic.FAST_POINTS.get(payload.fast_t, 0),
     }
 
     insights_vi = stroke_logic.build_xai_insights(
@@ -878,7 +878,7 @@ async def form_post(request: Request, db: Session = Depends(get_db)):
     else:
         db.add(models.HealthRecord(user_id=user.id, date=payload.record_date, **fields))
 
-    if risk_summary["final_score"] >= 75 and not user.golden_hour_start:
+    if risk_summary["final_score"] >= 70 and not user.golden_hour_start:
         user.golden_hour_start = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     db.commit()
