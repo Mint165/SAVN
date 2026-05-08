@@ -321,11 +321,16 @@ function updateDigitalTwin(months) {
     elVal.textContent = res.score + '%';
     
     let delta = res.score - latestScore;
+
+    // Translation
+    let lang = localStorage.getItem('lang') || 'vi';
+    let d = I18N[lang] || I18N.vi;
+
     if (delta > 0) {
-        elDelta.innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i> Tăng ${delta}%`;
+        elDelta.innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i> ${d.dt_up} ${delta}%`;
         elDelta.style.color = 'var(--danger)';
     } else {
-        elDelta.innerHTML = `<i class="fa-solid fa-minus"></i> Không đổi`;
+        elDelta.innerHTML = `<i class="fa-solid fa-minus"></i> ${d.dt_no_change}`;
         elDelta.style.color = 'var(--text-muted)';
     }
 
