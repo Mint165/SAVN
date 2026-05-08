@@ -44,8 +44,8 @@ document.addEventListener('DOMContentLoaded', function() {
       data: {
         labels: dates,
         datasets: [
-          { label: lbl.systolic, data: systolicD, borderColor: '#EF4444', backgroundColor: mkGrad(bc, 'rgba(239,68,68,0.2)', 'rgba(239,68,68,0)'), fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7 },
-          { label: lbl.diastolic, data: diastolicD, borderColor: '#10B981', backgroundColor: mkGrad(bc, 'rgba(16,185,129,0.2)', 'rgba(16,185,129,0)'), fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7 }
+          { label: lbl.systolic, data: systolicD, borderColor: '#EF4444', backgroundColor: mkGrad(bc, 'rgba(239,68,68,0.2)', 'rgba(239,68,68,0)'), fill: true, tension: 0, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7 },
+          { label: lbl.diastolic, data: diastolicD, borderColor: '#10B981', backgroundColor: mkGrad(bc, 'rgba(16,185,129,0.2)', 'rgba(16,185,129,0)'), fill: true, tension: 0, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7 }
         ]
       },
       options: Object.assign({}, baseOpts, { scales: { x: baseOpts.scales.x, y: Object.assign({}, baseOpts.scales.y, { beginAtZero: false }) } })
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
           data: strokeScores,
           borderColor: '#F59E0B',
           backgroundColor: mkGrad(rc, 'rgba(245,158,11,0.2)', 'rgba(245,158,11,0)'),
-          fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 5, pointHoverRadius: 8,
+          fill: true, tension: 0, borderWidth: 2.5, pointRadius: 5, pointHoverRadius: 8,
           segment: { borderColor: function(c) { return c.p0.parsed.y >= 75 ? '#EF4444' : undefined; } }
         }]
       },
@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
           data: glucoseD,
           borderColor: '#A78BFA',
           backgroundColor: mkGrad(gc, 'rgba(167,139,250,0.2)', 'rgba(167,139,250,0)'),
-          fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7
+          fill: true, tension: 0, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7
         }]
       },
       options: Object.assign({}, baseOpts, { scales: { x: baseOpts.scales.x, y: Object.assign({}, baseOpts.scales.y, { beginAtZero: false }) } })
