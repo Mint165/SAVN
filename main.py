@@ -885,8 +885,16 @@ async def form_post(request: Request, db: Session = Depends(get_db)):
         is_expired = False
         if user.golden_hour_start:
             try:
-                start_dt = datetime.datetime.fromisoformat(user.golden_hour_start)
-                if (datetime.datetime.now(datetime.timezone.utc) - start_dt).total_seconds() > 4.5 * 3600:
+                start_str = str(user.golden_hour_start)
+                if start_str and start_str not in ("None", "null", ""):
+                    start_dt = datetime.datetime.fromisoformat(start_str.replace("Z", "+00:00"))
+                    if start_dt.tzinfo is None:
+                        start_dt = start_dt.replace(tzinfo=datetime.timezone.utc)
+                    
+                    now = datetime.datetime.now(datetime.timezone.utc)
+                    if (now - start_dt).total_seconds() > 4.5 * 3600:
+                        is_expired = True
+                else:
                     is_expired = True
             except Exception:
                 is_expired = True
@@ -1138,27 +1146,38 @@ async def hospitals_api():
 
 @app.post("/api/trigger-golden-hour")
 async def trigger_golden_hour_api(request: Request, db: Session = Depends(get_db)):
-    user = get_current_user(request, db)
-    if not user:
-        return JSONResponse({"error": "unauthorized"}, status_code=401)
-
     try:
-        payload = await validate_request_payload(request, TriggerGoldenHourPayload)
-    except ValidationError as exc:
-        return JSONResponse({"error": flatten_validation_error(exc)}, status_code=422)
+        user = get_current_user(request, db)
+        if not user:
+            return JSONResponse({"error": "unauthorized"}, status_code=401)
 
-    # Re-trigger if not started OR if the previous one is older than 4.5 hours
-    is_expired = False
-    if user.golden_hour_start:
-        try:
-            start_dt = datetime.datetime.fromisoformat(user.golden_hour_start)
-            if (datetime.datetime.now(datetime.timezone.utc) - start_dt).total_seconds() > 4.5 * 3600:
+        payload = await validate_request_payload(request, TriggerGoldenHourPayload)
+        
+        # Re-trigger if not started OR if the previous one is older than 4.5 hours
+        is_expired = False
+        if user.golden_hour_start:
+            try:
+                # Use a more robust parsing method
+                start_str = str(user.golden_hour_start)
+                if start_str and start_str not in ("None", "null", ""):
+                    start_dt = datetime.datetime.fromisoformat(start_str.replace("Z", "+00:00"))
+                    # Handle naive vs aware comparison
+                    if start_dt.tzinfo is None:
+                        start_dt = start_dt.replace(tzinfo=datetime.timezone.utc)
+                    
+                    now = datetime.datetime.now(datetime.timezone.utc)
+                    if (now - start_dt).total_seconds() > 4.5 * 3600:
+                        is_expired = True
+                else:
+                    is_expired = True
+            except Exception:
                 is_expired = True
-        except Exception:
-            is_expired = True
-    
-    if not user.golden_hour_start or is_expired:
-        user.golden_hour_start = datetime.datetime.now(datetime.timezone.utc).isoformat()
-        db.commit()
-    
-    return JSONResponse({"ok": True, "start": user.golden_hour_start, "source": payload.source})
+        
+        if not user.golden_hour_start or is_expired:
+            user.golden_hour_start = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            db.commit()
+        
+        return JSONResponse({"ok": True, "start": user.golden_hour_start, "source": payload.source})
+    except Exception as exc:
+        print(f"ERROR in trigger_golden_hour_api: {exc}")
+        return JSONResponse({"error": str(exc)}, status_code=500)
