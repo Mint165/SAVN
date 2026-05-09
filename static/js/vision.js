@@ -40,8 +40,8 @@ var HBVision = (function () {
       if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
         var lm = results.multiFaceLandmarks[0];
 
-        // Draw light face mesh (contours only, NOT full tessellation)
-        drawConnectors(ctx, lm, FACEMESH_FACE_OVAL, { color: '#10B98180', lineWidth: 1 });
+        // Draw face mesh grid (FACEMESH_TESSELATION restored as requested)
+        drawConnectors(ctx, lm, FACEMESH_TESSELATION, { color: '#10B98130', lineWidth: 0.5 });
 
         // Key landmarks: mouth corners (61 left, 291 right), forehead (10), chin (152)
         var leftMouth = lm[61];

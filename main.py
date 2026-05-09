@@ -1187,7 +1187,7 @@ async def trigger_golden_hour_api(request: Request, db: Session = Depends(get_db
             user.golden_hour_start = datetime.datetime.now(datetime.timezone.utc).isoformat()
             db.commit()
         
-        return JSONResponse({"ok": True, "start": user.golden_hour_start, "source": payload.source})
+        return JSONResponse({"ok": True, "start": str(user.golden_hour_start) if user.golden_hour_start else None, "source": payload.source})
     except Exception as exc:
         print(f"ERROR in trigger_golden_hour_api: {exc}")
         return JSONResponse({"error": str(exc)}, status_code=500)
