@@ -29,6 +29,9 @@ var HBVision = (function () {
       minTrackingConfidence: 0.5
     });
 
+    var lastProcessedTime = 0;
+    var processInterval = 100; // Process every 100ms (~10 FPS)
+
     faceMesh.onResults(function (results) {
       ctx.save();
       ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
@@ -37,8 +40,8 @@ var HBVision = (function () {
       if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
         var lm = results.multiFaceLandmarks[0];
 
-        // Draw face mesh
-        drawConnectors(ctx, lm, FACEMESH_TESSELATION, { color: '#10B98140', lineWidth: 1 });
+        // Draw light face mesh (contours only, NOT full tessellation)
+        drawConnectors(ctx, lm, FACEMESH_FACE_OVAL, { color: '#10B98180', lineWidth: 1 });
 
         // Key landmarks: mouth corners (61 left, 291 right), forehead (10), chin (152)
         var leftMouth = lm[61];
@@ -62,11 +65,10 @@ var HBVision = (function () {
           alertCounter = Math.max(0, alertCounter - 2); // Decay
         }
 
-        var isAlert = alertCounter >= ALERT_DURATION;
+        var isAlert = alertCounter >= (ALERT_DURATION / 3); // Adjusted for throttling
         if (_statusCallback) _statusCallback(score, isAlert);
 
       } else {
-        // Still call callback with 0 score to hide loading screen even if no face
         if (_statusCallback) _statusCallback(0, false);
       }
       ctx.restore();
@@ -74,7 +76,12 @@ var HBVision = (function () {
 
     camera = new Camera(videoEl, {
       onFrame: async function () {
-        if (running) await faceMesh.send({ image: videoEl });
+        if (!running) return;
+        var now = Date.now();
+        if (now - lastProcessedTime >= processInterval) {
+          lastProcessedTime = now;
+          await faceMesh.send({ image: videoEl });
+        }
       },
       width: 480,
       height: 360
