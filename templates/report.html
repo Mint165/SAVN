@@ -111,22 +111,135 @@
 var dates={{ dates|safe }},systolicD={{ systolic|safe }},diastolicD={{ diastolic|safe }},riskD={{ risk_scores|safe }};
 var isDark=document.documentElement.getAttribute('data-theme')==='dark';
 var lang=localStorage.getItem('lang')||'vi';
-Chart.defaults.color=isDark?'#94A3B8':'#6B7280';Chart.defaults.font.family="'Inter',sans-serif";
-var gridC=isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)';
-var pointStroke=isDark?'#0F172A':'#FFFFFF';
+
+Chart.defaults.color=isDark?'#94A3B8':'#64748B';
+Chart.defaults.font.family="'Inter', system-ui, -apple-system, sans-serif";
+Chart.defaults.font.size=12;
+
+var gridC=isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)';
+var pointStroke=isDark?'#1E293B':'#FFFFFF';
 var hasTrend=dates.length>1;
-var lblSys=lang==='en'?'Systolic':'Tâm thu', lblDia=lang==='en'?'Diastolic':'Tâm trương', lblRisk=lang==='en'?'Risk (%)':'Nguy cơ (%)';
-var baseOpts={responsive:true,animation:{duration:900,easing:'easeInOutQuart'},plugins:{legend:{position:'bottom',labels:{padding:16,usePointStyle:true}}},scales:{x:{grid:{color:gridC}},y:{grid:{color:gridC}}}};
-function mkGrad(ctx,c1,c2){var g=ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,c1);g.addColorStop(1,c2);return g;}
-function lineOpts(color,fillColor,pointRadius,hoverRadius){return{borderColor:color,backgroundColor:hasTrend?fillColor:'transparent',fill:hasTrend,tension:0,spanGaps:true,showLine:hasTrend,borderWidth:2.5,pointRadius:hasTrend?pointRadius:Math.max(pointRadius+3,7),pointHoverRadius:hasTrend?hoverRadius:Math.max(hoverRadius+2,9),pointBackgroundColor:color,pointBorderColor:pointStroke,pointBorderWidth:2,clip:12};}
-var bpCtx=document.getElementById('reportBpChart');if(bpCtx){var bc=bpCtx.getContext('2d');window.reportBpChart=new Chart(bc,{type:'line',data:{labels:dates,datasets:[Object.assign({label:lblSys,data:systolicD},lineOpts('#EF4444',mkGrad(bc,'rgba(239,68,68,0.2)','rgba(239,68,68,0)'),4,7)),Object.assign({label:lblDia,data:diastolicD},lineOpts('#10B981',mkGrad(bc,'rgba(16,185,129,0.2)','rgba(16,185,129,0)'),4,7))]},options:Object.assign({},baseOpts,{scales:{x:baseOpts.scales.x,y:Object.assign({},baseOpts.scales.y,{beginAtZero:false})}})});}
-var rCtx=document.getElementById('reportRiskChart');if(rCtx){var rc=rCtx.getContext('2d');window.reportRiskChart=new Chart(rc,{type:'line',data:{labels:dates,datasets:[Object.assign({label:lblRisk,data:riskD},lineOpts('#F59E0B',mkGrad(rc,'rgba(245,158,11,0.2)','rgba(245,158,11,0)'),5,8))]},options:Object.assign({},baseOpts,{scales:{x:baseOpts.scales.x,y:Object.assign({},baseOpts.scales.y,{beginAtZero:true,max:100})}})});}
+
+var lbl = {
+  systolic: lang === 'en' ? 'Systolic' : 'Tâm thu',
+  diastolic: lang === 'en' ? 'Diastolic' : 'Tâm trương',
+  risk: lang === 'en' ? 'Risk (%)' : 'Nguy cơ (%)'
+};
+
+var baseOpts = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    intersect: false,
+    mode: 'index',
+  },
+  animation: {
+    duration: 1000,
+    easing: 'easeOutQuart'
+  },
+  plugins: {
+    legend: {
+      position: 'bottom',
+      labels: {
+        padding: 20,
+        usePointStyle: true,
+        pointStyle: 'circle',
+        font: { weight: '600' }
+      }
+    },
+    tooltip: {
+      backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+      titleColor: isDark ? '#F1F5F9' : '#1F2937',
+      bodyColor: isDark ? '#94A3B8' : '#64748B',
+      borderColor: gridC,
+      borderWidth: 1,
+      padding: 12,
+      boxPadding: 6,
+      usePointStyle: true
+    }
+  },
+  scales: {
+    x: { grid: { display: false }, ticks: { padding: 8 } },
+    y: { grid: { color: gridC, drawBorder: false }, ticks: { padding: 8 } }
+  }
+};
+
+function mkGrad(ctx,c1,c2){
+  try {
+    var g=ctx.createLinearGradient(0,0,0,260);
+    g.addColorStop(0,c1);
+    g.addColorStop(1,c2);
+    return g;
+  } catch(e) { return c1; }
+}
+
+function lineOpts(color,fillColor,pointRadius,hoverRadius){
+  return {
+    borderColor:color,
+    backgroundColor:hasTrend?fillColor:'transparent',
+    fill:hasTrend,
+    tension:0,
+    spanGaps:true,
+    showLine:true,
+    borderWidth:3,
+    pointRadius:hasTrend?pointRadius:6,
+    pointHoverRadius:hasTrend?hoverRadius:8,
+    pointBackgroundColor:color,
+    pointBorderColor:pointStroke,
+    pointBorderWidth:2,
+    clip:10
+  };
+}
+
+var bpCtx=document.getElementById('reportBpChart');
+if(bpCtx){
+  var bc=bpCtx.getContext('2d');
+  window.reportBpChart=new Chart(bc,{
+    type:'line',
+    data:{
+      labels:dates,
+      datasets:[
+        Object.assign({label:lbl.systolic,data:systolicD},lineOpts('#EF4444',mkGrad(bc,'rgba(239,68,68,0.15)','rgba(239,68,68,0)'),4,6)),
+        Object.assign({label:lbl.diastolic,data:diastolicD},lineOpts('#10B981',mkGrad(bc,'rgba(16,185,129,0.15)','rgba(16,185,129,0)'),4,6))
+      ]
+    },
+    options:Object.assign({},baseOpts,{scales:Object.assign({},baseOpts.scales,{y:Object.assign({},baseOpts.scales.y,{beginAtZero:false})})})
+  });
+}
+
+var rCtx=document.getElementById('reportRiskChart');
+if(rCtx){
+  var rc=rCtx.getContext('2d');
+  window.reportRiskChart=new Chart(rc,{
+    type:'line',
+    data:{
+      labels:dates,
+      datasets:[
+        Object.assign({label:lbl.risk,data:riskD},lineOpts('#F59E0B',mkGrad(rc,'rgba(245,158,11,0.15)','rgba(245,158,11,0)'),5,7))
+      ]
+    },
+    options:Object.assign({},baseOpts,{scales:Object.assign({},baseOpts.scales,{y:Object.assign({},baseOpts.scales.y,{beginAtZero:true,max:100})})})
+  });
+}
+
 function toggleXAI(){
   var acc = document.getElementById('xaiAccordion');
   if(acc) acc.classList.toggle('open');
 }
-window.addEventListener('languageChanged',function(){var l=localStorage.getItem('lang')||'vi';
-var isEn=l==='en';if(window.reportBpChart){window.reportBpChart.data.datasets[0].label=isEn?'Systolic':'Tâm thu';window.reportBpChart.data.datasets[1].label=isEn?'Diastolic':'Tâm trương';window.reportBpChart.update();}if(window.reportRiskChart){window.reportRiskChart.data.datasets[0].label=isEn?'Risk (%)':'Nguy cơ (%)';window.reportRiskChart.update();}});
+
+window.addEventListener('languageChanged',function(){
+  var l=localStorage.getItem('lang')||'vi';
+  var isEn=l==='en';
+  if(window.reportBpChart){
+    window.reportBpChart.data.datasets[0].label=isEn?'Systolic':'Tâm thu';
+    window.reportBpChart.data.datasets[1].label=isEn?'Diastolic':'Tâm trương';
+    window.reportBpChart.update();
+  }
+  if(window.reportRiskChart){
+    window.reportRiskChart.data.datasets[0].label=isEn?'Risk (%)':'Nguy cơ (%)';
+    window.reportRiskChart.update();
+  }
+});
 </script>
 {% endif %}
 {% endblock %}
