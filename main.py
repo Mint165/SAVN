@@ -911,6 +911,9 @@ async def form_post(request: Request, db: Session = Depends(get_db)):
         
         if not user.golden_hour_start or is_expired:
             user.golden_hour_start = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    else:
+        # If score is low, reset the Golden Hour timer
+        user.golden_hour_start = None
 
     db.commit()
     return RedirectResponse(url="/", status_code=302)

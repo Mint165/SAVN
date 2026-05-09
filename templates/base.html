@@ -435,7 +435,12 @@
       // Get start time from Backend User model if available
       {% if user is defined and user %}
       var backendStart = "{{ user.golden_hour_start or '' }}";
-      var startStr = backendStart || localStorage.getItem('goldenHourStart');
+      var startStr = backendStart;
+      // If logged in and backend says no golden hour, clear local cache
+      if (!backendStart || backendStart === 'None' || backendStart === 'null') {
+        localStorage.removeItem('goldenHourStart');
+        startStr = null;
+      }
       {% else %}
       var startStr = localStorage.getItem('goldenHourStart');
       {% endif %}
