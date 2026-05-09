@@ -187,20 +187,20 @@ def html_error_response(message: str, status_code: int = 403) -> HTMLResponse:
 EXERCISES = [
     {
         "id": 1,
-        "name": "Tho sau thu gian",
+        "name": "Thở sâu thư giãn",
         "name_en": "Deep Breathing Relaxation",
-        "duration": "10 phut",
+        "duration": "10 phút",
         "duration_en": "10 minutes",
-        "icon": "Breath",
+        "icon": "🫁",
         "image": "/static/img/exercise_breathing.png",
-        "description": "Bai tap tho nhe giup giam cang thang va on dinh nhip sinh hoc.",
+        "description": "Bài tập thở nhẹ giúp giảm căng thẳng và ổn định nhịp sinh học.",
         "description_en": "Gentle breathing practice for relaxation and rhythm control.",
         "steps": [
-            "Ngoi thang lung tren ghe thoai mai.",
-            "Hit vao cham bang mui trong 4 giay.",
-            "Giu hoi tho 2 giay.",
-            "Tho ra tu tu qua mieng trong 6 giay.",
-            "Lap lai 10 lan.",
+            "Ngồi thẳng lưng trên ghế thoải mái.",
+            "Hít vào chậm bằng mũi trong 4 giây.",
+            "Giữ hơi thở trong 2 giây.",
+            "Thở ra từ từ qua miệng trong 6 giây.",
+            "Lặp lại 10 lần.",
         ],
         "steps_en": [
             "Sit upright in a comfortable chair.",
@@ -212,20 +212,20 @@ EXERCISES = [
     },
     {
         "id": 2,
-        "name": "Di bo tai cho",
+        "name": "Đi bộ tại chỗ",
         "name_en": "Walking in Place",
-        "duration": "15 phut",
+        "duration": "15 phút",
         "duration_en": "15 minutes",
-        "icon": "Walk",
+        "icon": "🚶",
         "image": "/static/img/exercise_walking.png",
-        "description": "Van dong tim mach nhe de ho tro tuan hoan.",
+        "description": "Vận động tim mạch nhẹ để hỗ trợ tuần hoàn máu.",
         "description_en": "Light cardio movement to support circulation.",
         "steps": [
-            "Dung thang va bam nhe vao thanh ghe.",
-            "Nang goi trai len roi ha xuong.",
-            "Doi ben voi chan phai.",
-            "Tiep tuc luan phien voi nhip cham.",
-            "Thuc hien 20 buoc moi chan.",
+            "Đứng thẳng và bám nhẹ vào thành ghế.",
+            "Nâng gối trái lên rồi hạ xuống.",
+            "Đổi bên với chân phải.",
+            "Tiếp tục luân phiên với nhịp chậm.",
+            "Thực hiện 20 bước mỗi chân.",
         ],
         "steps_en": [
             "Stand straight and lightly hold a chair.",
@@ -237,45 +237,45 @@ EXERCISES = [
     },
     {
         "id": 3,
-        "name": "Gian co co",
+        "name": "Giãn cơ cổ",
         "name_en": "Neck Stretching",
-        "duration": "5 phut",
+        "duration": "5 phút",
         "duration_en": "5 minutes",
-        "icon": "Stretch",
+        "icon": "🧘",
         "image": "/static/img/exercise_neck.png",
-        "description": "Giam cang co vai va giup co the thu gian.",
+        "description": "Giảm căng cơ vai và giúp cơ thể thư giãn.",
         "description_en": "Relieve neck and shoulder tension.",
         "steps": [
-            "Ngoi thang va tha long vai.",
-            "Nghieng dau sang phai, giu 5 giay.",
-            "Tro ve giua, doi ben trai.",
-            "Quay nhe sang hai ben.",
-            "Khong uon co ra sau.",
+            "Ngồi thẳng và thả lỏng vai.",
+            "Nghiêng đầu sang phải, giữ 5 giây.",
+            "Trở về giữa, đổi bên trái.",
+            "Quay nhẹ cổ sang hai bên.",
+            "Không ưỡn cổ ra sau quá mạnh.",
         ],
         "steps_en": [
             "Sit upright and relax the shoulders.",
             "Tilt your head right and hold 5 seconds.",
             "Return to center, then repeat left.",
             "Rotate gently to both sides.",
-            "Do not tilt backward.",
+            "Do not tilt backward too hard.",
         ],
     },
     {
         "id": 4,
-        "name": "Tap tay va vai",
+        "name": "Tập tay và vai",
         "name_en": "Arm and Shoulder Exercises",
-        "duration": "10 phut",
+        "duration": "10 phút",
         "duration_en": "10 minutes",
-        "icon": "Arms",
+        "icon": "💪",
         "image": "/static/img/exercise_arms.png",
-        "description": "Tang suc manh tay va cai thien phoi hop van dong.",
+        "description": "Tăng sức mạnh tay và cải thiện phối hợp vận động.",
         "description_en": "Improve upper-body strength and coordination.",
         "steps": [
-            "Ngoi thang tren ghe.",
-            "Nang hai tay ngang vai va giu 2 giay.",
-            "Ha xuong cham.",
-            "Nang tay ve phia truoc va giu 2 giay.",
-            "Lap lai 10 lan moi dong tac.",
+            "Ngồi thẳng trên ghế.",
+            "Nâng hai tay ngang vai và giữ 2 giây.",
+            "Hạ xuống chậm.",
+            "Nâng tay về phía trước và giữ 2 giây.",
+            "Lặp lại 10 lần mỗi động tác.",
         ],
         "steps_en": [
             "Sit upright on a chair.",
@@ -287,20 +287,20 @@ EXERCISES = [
     },
     {
         "id": 5,
-        "name": "Tap thang bang",
+        "name": "Tập thăng bằng",
         "name_en": "Balance Training",
-        "duration": "10 phut",
+        "duration": "10 phút",
         "duration_en": "10 minutes",
-        "icon": "Balance",
+        "icon": "⚖️",
         "image": "/static/img/exercise_balance.png",
-        "description": "Ho tro giu thang bang va giam nguy co nga.",
+        "description": "Hỗ trợ giữ thăng bằng và giảm nguy cơ té ngã.",
         "description_en": "Support balance and reduce fall risk.",
         "steps": [
-            "Dung sau ghe va dat tay len tua lung.",
-            "Nang got chan phai va giu thang bang.",
-            "Ha xuong tu tu va doi ben.",
-            "Nhin thang ve phia truoc.",
-            "Tap 5 lan moi ben.",
+            "Đứng sau ghế và đặt tay lên tựa lưng.",
+            "Nâng gót chân phải và giữ thăng bằng.",
+            "Hạ xuống từ từ và đổi bên.",
+            "Nhìn thẳng về phía trước.",
+            "Tập 5 lần mỗi bên.",
         ],
         "steps_en": [
             "Stand behind a chair with hands on the backrest.",
@@ -312,20 +312,20 @@ EXERCISES = [
     },
     {
         "id": 6,
-        "name": "Yoga ghe nhe",
+        "name": "Yoga ghế nhẹ",
         "name_en": "Chair Yoga",
-        "duration": "15 phut",
+        "duration": "15 phút",
         "duration_en": "15 minutes",
-        "icon": "Yoga",
+        "icon": "🧘‍♂️",
         "image": "/static/img/exercise_breathing.png",
-        "description": "Chuyen dong nhe de tang linh hoat va thu gian.",
+        "description": "Chuyển động nhẹ để tăng linh hoạt và thư giãn.",
         "description_en": "Gentle seated yoga for flexibility and calm.",
         "steps": [
-            "Ngoi vung va dat hai chan tren san.",
-            "Hit vao va dua tay len cao.",
-            "Tho ra va xoay nhe sang phai.",
-            "Tro ve giua va doi ben trai.",
-            "Lap lai 5 lan moi ben.",
+            "Ngồi vững và đặt hai chân trên sàn.",
+            "Hít vào và đưa tay lên cao.",
+            "Thở ra và xoay nhẹ người sang phải.",
+            "Trở về giữa và đổi bên trái.",
+            "Lặp lại 5 lần mỗi bên.",
         ],
         "steps_en": [
             "Sit steadily with both feet on the floor.",
@@ -994,41 +994,41 @@ async def report_get(request: Request, db: Session = Depends(get_db)):
 
     if avg_sys >= 140 or avg_dia >= 90:
         diet_vi += [
-            "Giam muoi va tranh thuc pham che bien san.",
-            "Tang rau xanh va trai cay giau kali.",
+            "Giảm muối và tránh thực phẩm chế biến sẵn.",
+            "Tăng rau xanh và trái cây giàu kali.",
         ]
         diet_en += [
             "Reduce salt and avoid processed food.",
             "Increase vegetables and potassium-rich fruit.",
         ]
     else:
-        diet_vi.append("Huyet ap on dinh. Tiep tuc duy tri che do an hien tai.")
+        diet_vi.append("Huyết áp ổn định. Tiếp tục duy trì chế độ ăn hiện tại.")
         diet_en.append("Blood pressure is stable. Keep your current healthy diet.")
 
     if avg_gluc > 140:
-        diet_vi.append("Duong huyet cao. Han che do ngot va tinh bot trang.")
+        diet_vi.append("Đường huyết cao. Hạn chế đồ ngọt và tinh bột trắng.")
         diet_en.append("High blood glucose. Limit sweets and refined carbs.")
-        warn_vi.append("Duong huyet trung binh dang vuot nguong an toan.")
+        warn_vi.append("Đường huyết trung bình đang vượt ngưỡng an toàn.")
         warn_en.append("Average blood glucose is above the safer range.")
     elif avg_gluc > 100:
-        diet_vi.append("Duong huyet hoi cao. Tang chat xo va giam duong.")
+        diet_vi.append("Đường huyết hơi cao. Tăng chất xơ và giảm đường.")
         diet_en.append("Blood glucose is slightly elevated. Increase fiber and reduce sugar.")
 
     rest_vi += [
-        "Ngu 7-8 tieng moi dem va giu lich ngu deu.",
-        "Tranh man hinh dien tu 30 phut truoc khi ngu.",
+        "Ngủ 7-8 tiếng mỗi đêm và giữ lịch ngủ đều.",
+        "Tránh màn hình điện tử 30 phút trước khi ngủ.",
     ]
     rest_en += [
         "Sleep 7-8 hours nightly and keep a consistent schedule.",
         "Avoid screens 30 minutes before bed.",
     ]
     if avg_risk >= 50:
-        rest_vi.append("Nguy co dang cao. Can nghi ngoi va giam stress.")
+        rest_vi.append("Nguy cơ đang cao. Cần nghỉ ngơi và giảm căng thẳng.")
         rest_en.append("Risk is elevated. Prioritize rest and stress reduction.")
 
     ex_vi += [
-        "Di bo nhe 20-30 phut moi ngay.",
-        "Tap tho sau 10 phut moi ngay.",
+        "Đi bộ nhẹ 20-30 phút mỗi ngày.",
+        "Tập thở sâu 10 phút mỗi ngày.",
     ]
     ex_en += [
         "Walk lightly for 20-30 minutes daily.",
@@ -1037,20 +1037,20 @@ async def report_get(request: Request, db: Session = Depends(get_db)):
 
     streak = user.exercise_streak or 0
     if streak >= 7:
-        ex_vi.append(f"Ban dang co chuoi tap {streak} ngay lien tiep.")
+        ex_vi.append(f"Bạn đang có chuỗi tập {streak} ngày liên tiếp.")
         ex_en.append(f"You have maintained a {streak}-day exercise streak.")
     elif streak > 0:
-        ex_vi.append(f"Ban dang o chuoi {streak} ngay. Tiep tuc duy tri.")
+        ex_vi.append(f"Bạn đang ở chuỗi {streak} ngày. Tiếp tục duy trì.")
         ex_en.append(f"You are on a {streak}-day streak. Keep it going.")
     else:
-        ex_vi.append("Hay bat dau tap luyen deu de ho tro tim mach.")
+        ex_vi.append("Hãy bắt đầu tập luyện đều để hỗ trợ tim mạch.")
         ex_en.append("Start a daily routine to support cardiovascular health.")
 
     if avg_risk >= 75:
-        warn_vi.append("Nguy co rat cao. Can den co so y te som nhat.")
+        warn_vi.append("Nguy cơ rất cao. Cần đến cơ sở y tế sớm nhất.")
         warn_en.append("Risk is very high. Seek medical care as soon as possible.")
     elif avg_risk >= 55:
-        warn_vi.append("Nguy co cao. Nen dat lich kham trong tuan nay.")
+        warn_vi.append("Nguy cơ cao. Nên đặt lịch khám trong tuần này.")
         warn_en.append("Risk is high. Schedule a medical visit this week.")
 
     latest_record = records[-1]
