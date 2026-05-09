@@ -91,6 +91,16 @@ async def catch_exceptions_middleware(request: Request, call_next):
 
         print(f"CRITICAL ERROR: {exc}")
         traceback.print_exc()
+        
+        # Check if client prefers JSON
+        accept = request.headers.get("accept", "")
+        content_type = request.headers.get("content-type", "")
+        if "application/json" in accept or "application/json" in content_type:
+            return JSONResponse(
+                {"error": f"System Error: {str(exc)}"},
+                status_code=500
+            )
+
         return HTMLResponse(
             content=(
                 "<html><body><h1>System Error (HeartBits)</h1>"
