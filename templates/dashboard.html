@@ -252,9 +252,10 @@ function confirmEmergencyFromAI(){
   btn.disabled = true;
   btn.textContent = d.activating || 'Activating...';
   window.confirmEmergencySymptoms(_manualEmergencySource)
-    .catch(function(){ 
+    .catch(function(err){ 
       btn.disabled = false; 
       btn.textContent = d.confirm_manually || 'Confirm symptoms manually'; 
+      alert(err.message || (lang === 'en' ? 'Activation failed. Please try again.' : 'Kích hoạt thất bại. Vui lòng thử lại.'));
     });
 }
 
