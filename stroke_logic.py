@@ -181,12 +181,17 @@ def compute_risk_summary(
     combined_score = base_score + bp_bonus + glucose_bonus + age_bonus
     final_score = min(99, combined_score)
     override_msg = None
+    override_msg_en = None
 
     if max(fast_f, fast_a, fast_s, fast_t) == FAST_LEVEL_SEVERE:
         final_score = 99
         override_msg = (
             "⚠️ CẢNH BÁO KHẨN CẤP: Triệu chứng NẶNG được phát hiện — "
             "GỌI CẤP CỨU 115 NGAY LẬP TỨC!"
+        )
+        override_msg_en = (
+            "⚠️ EMERGENCY WARNING: SEVERE symptoms detected — "
+            "CALL EMERGENCY SERVICES (115/911) IMMEDIATELY!"
         )
 
     return {
@@ -197,6 +202,7 @@ def compute_risk_summary(
         "combined_score": combined_score,
         "final_score": final_score,
         "override_msg": override_msg,
+        "override_msg_en": override_msg_en,
     }
 
 

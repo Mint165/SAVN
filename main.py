@@ -676,24 +676,34 @@ async def home(request: Request, db: Session = Depends(get_db)):
 
     advice_list_vi = []
     advice_list_en = []
-    if latest_record and latest_record.advice:
-        try:
-            advice_list_vi = json.loads(latest_record.advice)
-        except Exception:
-            advice_list_vi = [latest_record.advice]
-        advice_list_en = stroke_logic.generate_advice_en(
-            final_score=latest_record.final_score,
-            systolic=latest_record.systolic,
-            diastolic=latest_record.diastolic,
-            avg_glucose=latest_record.avg_glucose_level or 0,
-            age=latest_record.age or 50.0,
-            fast_f=latest_record.fast_f or 0,
-            fast_a=latest_record.fast_a or 0,
-            fast_s=latest_record.fast_s or 0,
-            fast_t=latest_record.fast_t or 0,
-            heart_disease=latest_record.heart_disease or 0,
-            smoking_status=latest_record.smoking_status or "never smoked",
-        )
+    override_msg_en = None
+    if latest_record:
+        if latest_record.advice:
+            try:
+                advice_list_vi = json.loads(latest_record.advice)
+            except Exception:
+                advice_list_vi = [latest_record.advice]
+            advice_list_en = stroke_logic.generate_advice_en(
+                final_score=latest_record.final_score,
+                systolic=latest_record.systolic,
+                diastolic=latest_record.diastolic,
+                avg_glucose=latest_record.avg_glucose_level or 0,
+                age=latest_record.age or 50.0,
+                fast_f=latest_record.fast_f or 0,
+                fast_a=latest_record.fast_a or 0,
+                fast_s=latest_record.fast_s or 0,
+                fast_t=latest_record.fast_t or 0,
+                heart_disease=latest_record.heart_disease or 0,
+                smoking_status=latest_record.smoking_status or "never smoked",
+            )
+        
+        if latest_record.override_msg:
+            if "NẶNG" in latest_record.override_msg or "SEVERE" in latest_record.override_msg:
+                override_msg_en = "⚠️ EMERGENCY WARNING: SEVERE symptoms detected — CALL EMERGENCY SERVICES (115/911) IMMEDIATELY!"
+            elif "RÕ" in latest_record.override_msg or "CLEAR" in latest_record.override_msg:
+                override_msg_en = "⚠️ Note: Notable FAST symptoms detected — risk score adjusted for safety."
+            else:
+                override_msg_en = latest_record.override_msg
 
     return templates.TemplateResponse(
         request=request,
@@ -708,6 +718,7 @@ async def home(request: Request, db: Session = Depends(get_db)):
             "latest_record": latest_record,
             "advice_list_vi": advice_list_vi,
             "advice_list_en": advice_list_en,
+            "override_msg_en": override_msg_en,
             "xai": xai_data,
             "xai_msg": stroke_logic.get_key_factors_msg(xai_factors, "vi") if xai_factors else "",
             "xai_msg_en": stroke_logic.get_key_factors_msg(xai_factors, "en") if xai_factors else "",

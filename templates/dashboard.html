@@ -76,7 +76,11 @@
   {% else %}
 
   {% if latest_record.override_msg %}
-  <div class="alert alert-danger"><i class="fa-solid fa-triangle-exclamation"></i><div>{{ latest_record.override_msg }}</div></div>
+  <div class="alert alert-danger">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <div data-lang="vi">{{ latest_record.override_msg }}</div>
+    {% if override_msg_en %}<div data-lang="en" style="display:none">{{ override_msg_en }}</div>{% endif %}
+  </div>
   {% endif %}
 
   <div class="summary-cards">
