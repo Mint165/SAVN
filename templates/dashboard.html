@@ -273,6 +273,37 @@ document.addEventListener('DOMContentLoaded', function(){
       _aiInitialized = true;
     }
   }, 100);
+
+  // Improve Hospital Map accuracy
+  function updateHospitalLink(lat, lon) {
+    var mapBtn = document.getElementById('mapBtn');
+    if (!mapBtn) return;
+    if (lat && lon) {
+      // Use precise coordinates for the search
+      mapBtn.href = "https://www.google.com/maps/search/hospital/@" + lat + "," + lon + ",15z";
+      // Optional: Add a small indicator that location is precise
+      var desc = mapBtn.querySelector('small');
+      if (desc) {
+          var isEn = (localStorage.getItem('lang') || 'vi') === 'en';
+          desc.innerHTML = '<i class="fa-solid fa-location-dot" style="color:var(--success)"></i> ' + (isEn ? 'Location synchronized' : 'Đã xác định vị trí chính xác');
+      }
+    } else {
+      mapBtn.href = "https://www.google.com/maps/search/hospital+near+me/";
+    }
+  }
+
+  window.addEventListener('locationUpdated', function(e) {
+    if (e.detail && e.detail.lat) {
+      updateHospitalLink(e.detail.lat, e.detail.lon);
+    }
+  });
+
+  // Initial attempt if global GPS already captured
+  if (typeof _sosLat !== 'undefined' && _sosLat) {
+    updateHospitalLink(_sosLat, _sosLon);
+  } else if (typeof captureGPS === 'function') {
+    captureGPS();
+  }
 });
 </script>
 <script src="/static/js/dashboard.js"></script>

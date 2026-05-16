@@ -371,8 +371,13 @@
     function captureGPS() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          function (p) { _sosLat = p.coords.latitude; _sosLon = p.coords.longitude; },
-          function () { }, { timeout: 8000, maximumAge: 60000 }
+          function (p) { 
+            _sosLat = p.coords.latitude; 
+            _sosLon = p.coords.longitude; 
+            window.dispatchEvent(new CustomEvent('locationUpdated', { detail: { lat: _sosLat, lon: _sosLon } }));
+          },
+          function () { }, 
+          { timeout: 10000, maximumAge: 30000, enableHighAccuracy: true }
         );
       }
     }
@@ -409,12 +414,13 @@
           navigator.geolocation.getCurrentPosition(
             function (p) {
               _sosLat = p.coords.latitude; _sosLon = p.coords.longitude;
+              window.dispatchEvent(new CustomEvent('locationUpdated', { detail: { lat: _sosLat, lon: _sosLon } }));
               triggerLink(_sosLat, _sosLon);
             },
             function () {
               triggerLink(null, null);
             },
-            { timeout: 4000, maximumAge: 0 }
+            { timeout: 6000, maximumAge: 0, enableHighAccuracy: true }
           );
         } else {
           triggerLink(null, null);
