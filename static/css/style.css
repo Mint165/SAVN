@@ -746,3 +746,46 @@ input::-webkit-contacts-auto-fill-button, input::-webkit-credentials-auto-fill-b
 .telemetry-item .t-status.ok { color: var(--success); }
 .telemetry-item .t-status.warn { color: var(--warning); }
 .telemetry-item .t-status.alert { color: var(--danger); }
+
+/* ===== FACIAL CALIBRATION OVERLAY ===== */
+.calibration-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(1.5px);
+  color: white;
+  z-index: 10;
+  pointer-events: none;
+  animation: fadeIn 0.2s ease-out;
+}
+.calibration-content {
+  background: rgba(30, 41, 59, 0.95);
+  padding: 0.6rem 1.2rem;
+  border-radius: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(139, 92, 246, 0.25);
+  border-top: 2px solid #8B5CF6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+#btnRecalibrate {
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  transition: transform 0.15s, opacity 0.2s;
+}
+#btnRecalibrate:active {
+  transform: scale(0.96);
+}

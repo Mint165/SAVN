@@ -42,6 +42,18 @@ var HBVision = (function () {
   // ─── Frame Counter ──────────────────────────────────────────────
   var frameCounter = 0;
 
+  // ─── Calibration State ──────────────────────────────────────────
+  var isCalibrating = false;
+  var calibrationFrames = 30;
+  var calibrationData = [];
+  var baselineScore = 0;
+
+  function startCalibration() {
+    isCalibrating = true;
+    calibrationData = [];
+    baselineScore = 0;
+  }
+
   function init(videoEl, canvasEl, statusCallback) {
     _statusCallback = statusCallback;
     var ctx = canvasEl.getContext('2d');
@@ -88,8 +100,38 @@ var HBVision = (function () {
         var leftMouth = lm[61];
         var rightMouth = lm[291];
         var faceH = Math.abs(lm[10].y - lm[152].y);
-        var yDiff = Math.abs(leftMouth.y - rightMouth.y);
+
+        // ─── Head Pose Compensation (Roll) ──────────────────────────
+        var leftEye = lm[33];
+        var rightEye = lm[263];
+        var theta = Math.atan2(leftEye.y - rightEye.y, leftEye.x - rightEye.x);
+
+        // Rotate mouth corners back by -theta around their midpoint to neutralize tilt
+        var midX = (leftMouth.x + rightMouth.x) / 2;
+        var midY = (leftMouth.y + rightMouth.y) / 2;
+        var sinNegTheta = Math.sin(-theta);
+        var cosNegTheta = Math.cos(-theta);
+
+        var leftCorrectedY = (leftMouth.x - midX) * sinNegTheta + (leftMouth.y - midY) * cosNegTheta + midY;
+        var rightCorrectedY = (rightMouth.x - midX) * sinNegTheta + (rightMouth.y - midY) * cosNegTheta + midY;
+
+        var yDiff = Math.abs(leftCorrectedY - rightCorrectedY);
         var score = Math.min(100, Math.round((yDiff / faceH) * 500));
+
+        // ─── Calibration Logic ────────────────────────────────────
+        if (isCalibrating) {
+          calibrationData.push(score);
+          if (calibrationData.length >= calibrationFrames) {
+            var sum = 0;
+            for (var i = 0; i < calibrationData.length; i++) {
+              sum += calibrationData[i];
+            }
+            baselineScore = Math.round(sum / calibrationFrames);
+            isCalibrating = false;
+          }
+        }
+
+        var finalScore = isCalibrating ? 0 : Math.max(0, score - baselineScore);
 
         // ─── Tremor buffer update ─────────────────────────────────
         tremorBuffer.push({ left: lm[61].y, right: lm[291].y });
@@ -97,7 +139,7 @@ var HBVision = (function () {
         var tremorIndex = calcTremorIndex(tremorBuffer);
 
         // Draw mouth landmarks
-        var color = score > ALERT_THRESHOLD ? '#EF4444' : '#10B981';
+        var color = finalScore > ALERT_THRESHOLD ? '#EF4444' : '#10B981';
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.arc(leftMouth.x * canvasEl.width, leftMouth.y * canvasEl.height, 5, 0, 2 * Math.PI);
@@ -105,7 +147,7 @@ var HBVision = (function () {
         ctx.fill();
 
         // Check sustained asymmetry
-        if (score > ALERT_THRESHOLD) {
+        if (finalScore > ALERT_THRESHOLD) {
           alertCounter++;
           // ─── Response delay: mark start of asymmetry ────────────
           if (asymmetryStartTime === null) {
@@ -124,10 +166,12 @@ var HBVision = (function () {
 
         // ─── Enhanced callback with telemetry ─────────────────────
         if (_statusCallback) {
-          _statusCallback(score, isAlert, {
+          _statusCallback(finalScore, isAlert, {
             tremorIndex: tremorIndex,
             responseDelay: lastResponseDelay,
-            frameCount: frameCounter
+            frameCount: frameCounter,
+            isCalibrating: isCalibrating,
+            calibrationProgress: isCalibrating ? Math.round((calibrationData.length / calibrationFrames) * 100) : 100
           });
         }
 
@@ -136,7 +180,9 @@ var HBVision = (function () {
           _statusCallback(0, false, {
             tremorIndex: 0,
             responseDelay: lastResponseDelay,
-            frameCount: frameCounter
+            frameCount: frameCounter,
+            isCalibrating: isCalibrating,
+            calibrationProgress: isCalibrating ? Math.round((calibrationData.length / calibrationFrames) * 100) : 100
           });
         }
       }
@@ -171,6 +217,7 @@ var HBVision = (function () {
     canvasEl.width = canvasEl.clientWidth;
     canvasEl.height = canvasEl.clientHeight;
     camera.start();
+    startCalibration();
   }
 
   function stop() {
@@ -195,6 +242,7 @@ var HBVision = (function () {
     start: start,
     stop: stop,
     setCallback: setCallback,
-    resetTelemetry: resetTelemetry
+    resetTelemetry: resetTelemetry,
+    startCalibration: startCalibration
   };
 })();

@@ -42,6 +42,15 @@
           <video id="aiVideo" autoplay playsinline muted style="display:none"></video>
           <canvas id="aiCanvas"></canvas>
           <div id="aiLoading" class="ai-loading"><div class="spinner"></div><p data-i18n="ai_loading">Loading AI...</p></div>
+          
+          <!-- Calibration Status Overlay -->
+          <div id="calibrationStatus" class="calibration-overlay" style="display: none;">
+            <div class="calibration-content">
+              <div class="spinner-small"></div>
+              <span id="calibrationText" data-i18n="ai_calibrating">Đang cân chuẩn khuôn mặt...</span>
+              <strong id="calibrationPercent">0%</strong>
+            </div>
+          </div>
         </div>
         <div class="ai-meter">
           <div class="label-group">
@@ -50,6 +59,11 @@
           </div>
           <div class="meter-bar"><div id="aiFaceBar" class="meter-fill"></div></div>
           <div id="aiFaceStatus" class="ai-status ok" data-i18n="ai_face_balanced">Face appears balanced</div>
+        </div>
+        <div style="text-align: center; margin: 0.5rem 0 1rem;">
+          <button id="btnRecalibrate" class="btn btn-secondary-solid btn-sm" data-i18n="ai_recalibrate_btn" type="button" style="display: none;">
+            <i class="fa-solid fa-arrows-rotate"></i> Cân chuẩn lại
+          </button>
         </div>
         
         <!-- NEW FACIAL TELEMETRY PANEL -->
@@ -261,43 +275,79 @@ function startFaceScan(){
   var videoEl = document.getElementById('aiVideo');
   var canvasEl = document.getElementById('aiCanvas');
   var loading = document.getElementById('aiLoading');
+  var calibStatus = document.getElementById('calibrationStatus');
+  var calibPercent = document.getElementById('calibrationPercent');
+  var btnRecalibrate = document.getElementById('btnRecalibrate');
+
   if(typeof HBVision === 'undefined') return;
 
   var lang = localStorage.getItem('lang') || 'vi';
   var d = I18N[lang] || I18N.vi;
 
+  if (calibStatus) calibStatus.style.display = 'none';
+  if (btnRecalibrate) {
+    btnRecalibrate.style.display = 'inline-block';
+    btnRecalibrate.onclick = function() {
+      HBVision.resetTelemetry();
+      HBVision.startCalibration();
+    };
+  }
+
   HBVision.setCallback(function(score, isAlert, telemetry){
     loading.style.display = 'none';
-    document.getElementById('aiFaceScore').textContent = score + '%';
-    var bar = document.getElementById('aiFaceBar');
-    bar.style.width = score + '%';
-    bar.style.background = isAlert ? 'var(--danger)' : 'var(--primary)';
-    var statusEl = document.getElementById('aiFaceStatus');
-    if(score > 15){
-      statusEl.textContent = d.ai_face_asymmetry || 'Possible asymmetry detected';
-      statusEl.className = 'ai-status alert';
-    } else {
-      statusEl.textContent = d.ai_face_balanced || 'Face appears balanced';
+
+    var isCalibrating = telemetry && telemetry.isCalibrating;
+
+    if (isCalibrating) {
+      if (calibStatus) calibStatus.style.display = 'flex';
+      if (calibPercent) calibPercent.textContent = telemetry.calibrationProgress + '%';
+
+      document.getElementById('aiFaceScore').textContent = '--';
+      var bar = document.getElementById('aiFaceBar');
+      bar.style.width = '0%';
+
+      var statusEl = document.getElementById('aiFaceStatus');
+      statusEl.textContent = d.ai_calibrating || 'Calibrating face...';
       statusEl.className = 'ai-status ok';
-      resetEmergencyPrompt();
-    }
-    if(isAlert){
-      var reason = lang === 'en' ? 'Sustained facial asymmetry detected. Please confirm manually before emergency support starts.' : 'Phát hiện mất cân đối khuôn mặt kéo dài. Vui lòng xác nhận thủ công trước khi kích hoạt hỗ trợ khẩn cấp.';
-      showEmergencyPrompt('face', reason);
-    }
 
-    if(telemetry) {
-      document.getElementById('telTremorVal').textContent = telemetry.tremorIndex;
-      var tStat = document.getElementById('telTremorStat');
-      if (telemetry.tremorIndex > 70) { tStat.textContent = 'HIGH'; tStat.className = 't-status alert'; }
-      else if (telemetry.tremorIndex > 40) { tStat.textContent = 'WARN'; tStat.className = 't-status warn'; }
-      else { tStat.textContent = 'OK'; tStat.className = 't-status ok'; }
+      document.getElementById('telTremorVal').textContent = '--';
+      document.getElementById('telResponseVal').innerHTML = '--<small>ms</small>';
+    } else {
+      if (calibStatus) calibStatus.style.display = 'none';
 
-      document.getElementById('telResponseVal').innerHTML = telemetry.responseDelay + '<small>ms</small>';
-      var rStat = document.getElementById('telResponseStat');
-      if (telemetry.responseDelay > 2000) { rStat.textContent = 'SLOW'; rStat.className = 't-status alert'; }
-      else if (telemetry.responseDelay > 1000) { rStat.textContent = 'DELAY'; rStat.className = 't-status warn'; }
-      else { rStat.textContent = 'OK'; rStat.className = 't-status ok'; }
+      document.getElementById('aiFaceScore').textContent = score + '%';
+      var bar = document.getElementById('aiFaceBar');
+      bar.style.width = score + '%';
+      bar.style.background = isAlert ? 'var(--danger)' : 'var(--primary)';
+
+      var statusEl = document.getElementById('aiFaceStatus');
+      if(score > 15){
+        statusEl.textContent = d.ai_face_asymmetry || 'Possible asymmetry detected';
+        statusEl.className = 'ai-status alert';
+      } else {
+        statusEl.textContent = d.ai_face_balanced || 'Face appears balanced';
+        statusEl.className = 'ai-status ok';
+        resetEmergencyPrompt();
+      }
+
+      if(isAlert){
+        var reason = lang === 'en' ? 'Sustained facial asymmetry detected. Please confirm manually before emergency support starts.' : 'Phát hiện mất cân đối khuôn mặt kéo dài. Vui lòng xác nhận thủ công trước khi kích hoạt hỗ trợ khẩn cấp.';
+        showEmergencyPrompt('face', reason);
+      }
+
+      if(telemetry) {
+        document.getElementById('telTremorVal').textContent = telemetry.tremorIndex;
+        var tStat = document.getElementById('telTremorStat');
+        if (telemetry.tremorIndex > 70) { tStat.textContent = 'HIGH'; tStat.className = 't-status alert'; }
+        else if (telemetry.tremorIndex > 40) { tStat.textContent = 'WARN'; tStat.className = 't-status warn'; }
+        else { tStat.textContent = 'OK'; tStat.className = 't-status ok'; }
+
+        document.getElementById('telResponseVal').innerHTML = telemetry.responseDelay + '<small>ms</small>';
+        var rStat = document.getElementById('telResponseStat');
+        if (telemetry.responseDelay > 2000) { rStat.textContent = 'SLOW'; rStat.className = 't-status alert'; }
+        else if (telemetry.responseDelay > 1000) { rStat.textContent = 'DELAY'; rStat.className = 't-status warn'; }
+        else { rStat.textContent = 'OK'; rStat.className = 't-status ok'; }
+      }
     }
   });
 
