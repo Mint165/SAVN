@@ -12,6 +12,36 @@ var HBVision = (function () {
 
   var _statusCallback = null;
 
+  // ─── Tremor Detection (rolling buffer) ──────────────────────────
+  var tremorBuffer = [];
+  var TREMOR_BUFFER_SIZE = 20;
+
+  function calcTremorIndex(buf) {
+    if (buf.length < TREMOR_BUFFER_SIZE) return 0;
+    var vals = [];
+    for (var i = 0; i < buf.length; i++) {
+      vals.push(buf[i].left);
+      vals.push(buf[i].right);
+    }
+    var sum = 0;
+    for (var i = 0; i < vals.length; i++) sum += vals[i];
+    var mean = sum / vals.length;
+    var sqSum = 0;
+    for (var i = 0; i < vals.length; i++) {
+      var d = vals[i] - mean;
+      sqSum += d * d;
+    }
+    var stddev = Math.sqrt(sqSum / vals.length);
+    return Math.min(100, Math.round(stddev * 10000));
+  }
+
+  // ─── Response Delay Tracking ────────────────────────────────────
+  var asymmetryStartTime = null;
+  var lastResponseDelay = 0;
+
+  // ─── Frame Counter ──────────────────────────────────────────────
+  var frameCounter = 0;
+
   function init(videoEl, canvasEl, statusCallback) {
     _statusCallback = statusCallback;
     var ctx = canvasEl.getContext('2d');
@@ -39,9 +69,20 @@ var HBVision = (function () {
 
       if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
         var lm = results.multiFaceLandmarks[0];
+        frameCounter++;
 
-        // Draw face mesh grid (FACEMESH_TESSELATION restored as requested)
-        drawConnectors(ctx, lm, FACEMESH_TESSELATION, { color: '#10B98130', lineWidth: 0.5 });
+        // ─── Neon wireframe: tesselation (subtle purple) ──────────
+        drawConnectors(ctx, lm, FACEMESH_TESSELATION, {
+          color: 'rgba(139,92,246,0.35)', lineWidth: 0.5
+        });
+
+        // ─── Neon wireframe: key contours (brighter purple) ───────
+        drawConnectors(ctx, lm, FACEMESH_FACE_OVAL, {
+          color: 'rgba(139,92,246,0.8)', lineWidth: 1.5
+        });
+        drawConnectors(ctx, lm, FACEMESH_LIPS, {
+          color: 'rgba(139,92,246,0.8)', lineWidth: 1.5
+        });
 
         // Key landmarks: mouth corners (61 left, 291 right), forehead (10), chin (152)
         var leftMouth = lm[61];
@@ -49,6 +90,11 @@ var HBVision = (function () {
         var faceH = Math.abs(lm[10].y - lm[152].y);
         var yDiff = Math.abs(leftMouth.y - rightMouth.y);
         var score = Math.min(100, Math.round((yDiff / faceH) * 500));
+
+        // ─── Tremor buffer update ─────────────────────────────────
+        tremorBuffer.push({ left: lm[61].y, right: lm[291].y });
+        if (tremorBuffer.length > TREMOR_BUFFER_SIZE) tremorBuffer.shift();
+        var tremorIndex = calcTremorIndex(tremorBuffer);
 
         // Draw mouth landmarks
         var color = score > ALERT_THRESHOLD ? '#EF4444' : '#10B981';
@@ -61,15 +107,38 @@ var HBVision = (function () {
         // Check sustained asymmetry
         if (score > ALERT_THRESHOLD) {
           alertCounter++;
+          // ─── Response delay: mark start of asymmetry ────────────
+          if (asymmetryStartTime === null) {
+            asymmetryStartTime = Date.now();
+          }
         } else {
           alertCounter = Math.max(0, alertCounter - 2); // Decay
+          // ─── Response delay: record recovery time ───────────────
+          if (asymmetryStartTime !== null) {
+            lastResponseDelay = Date.now() - asymmetryStartTime;
+            asymmetryStartTime = null;
+          }
         }
 
         var isAlert = alertCounter >= (ALERT_DURATION / 3); // Adjusted for throttling
-        if (_statusCallback) _statusCallback(score, isAlert);
+
+        // ─── Enhanced callback with telemetry ─────────────────────
+        if (_statusCallback) {
+          _statusCallback(score, isAlert, {
+            tremorIndex: tremorIndex,
+            responseDelay: lastResponseDelay,
+            frameCount: frameCounter
+          });
+        }
 
       } else {
-        if (_statusCallback) _statusCallback(0, false);
+        if (_statusCallback) {
+          _statusCallback(0, false, {
+            tremorIndex: 0,
+            responseDelay: lastResponseDelay,
+            frameCount: frameCounter
+          });
+        }
       }
       ctx.restore();
     });
@@ -114,5 +183,18 @@ var HBVision = (function () {
     _statusCallback = cb;
   }
 
-  return { init: init, start: start, stop: stop, setCallback: setCallback };
+  function resetTelemetry() {
+    tremorBuffer = [];
+    asymmetryStartTime = null;
+    lastResponseDelay = 0;
+    frameCounter = 0;
+  }
+
+  return {
+    init: init,
+    start: start,
+    stop: stop,
+    setCallback: setCallback,
+    resetTelemetry: resetTelemetry
+  };
 })();

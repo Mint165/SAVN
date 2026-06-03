@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - HeartBits{% endblock %}
+{% block head %}<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>{% endblock %}
 {% block body %}
 <div class="main-content">
   <div class="page-header">
@@ -49,6 +50,20 @@
           </div>
           <div class="meter-bar"><div id="aiFaceBar" class="meter-fill"></div></div>
           <div id="aiFaceStatus" class="ai-status ok" data-i18n="ai_face_balanced">Face appears balanced</div>
+        </div>
+        
+        <!-- NEW FACIAL TELEMETRY PANEL -->
+        <div class="dt-telemetry">
+          <div class="telemetry-item">
+            <span class="t-label" data-i18n="tel_tremor">Micro-Tremor</span>
+            <span class="t-value" id="telTremorVal">--</span>
+            <span class="t-status ok" id="telTremorStat">OK</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="t-label" data-i18n="tel_response">Response Delay</span>
+            <span class="t-value" id="telResponseVal">--<small>ms</small></span>
+            <span class="t-status ok" id="telResponseStat">OK</span>
+          </div>
         </div>
       </div>
 
@@ -102,6 +117,26 @@
       <div class="card-info"><h3 data-i18n="streak_label">Chuỗi Tập Luyện</h3><div class="value">{{ user.exercise_streak }}</div><small class="text-muted" data-i18n="unit_days">ngày liên tiếp</small></div>
     </div>
     {% endif %}
+  </div>
+
+  <!-- DIGITAL TWIN SECTION -->
+  <div class="dt-card">
+    <div style="padding: 1.25rem 1.25rem 0;">
+      <div class="dt-header">
+        <div class="dt-header-icon"><i class="fa-solid fa-dna"></i></div>
+        <div>
+          <h3 data-i18n="dt_title">Mô Phỏng Digital Twin</h3>
+          <p data-i18n="dt_desc">Dự báo diễn tiến nguy cơ đột quỵ trong 5 năm tới</p>
+        </div>
+      </div>
+      <div class="dt-baseline">
+        <i class="fa-solid fa-crosshairs" style="color:var(--text-muted)"></i>
+        <span data-i18n="dt_current_baseline">Nguy cơ hiện tại:</span>
+        <span class="current-val">{{ latest_record.final_score }}%</span>
+      </div>
+    </div>
+    <!-- The chart will be rendered by JS inside here -->
+    <div id="digitalTwinContainer"></div>
   </div>
 
   {% if xai %}
@@ -231,7 +266,7 @@ function startFaceScan(){
   var lang = localStorage.getItem('lang') || 'vi';
   var d = I18N[lang] || I18N.vi;
 
-  HBVision.setCallback(function(score, isAlert){
+  HBVision.setCallback(function(score, isAlert, telemetry){
     loading.style.display = 'none';
     document.getElementById('aiFaceScore').textContent = score + '%';
     var bar = document.getElementById('aiFaceBar');
@@ -249,6 +284,20 @@ function startFaceScan(){
     if(isAlert){
       var reason = lang === 'en' ? 'Sustained facial asymmetry detected. Please confirm manually before emergency support starts.' : 'Phát hiện mất cân đối khuôn mặt kéo dài. Vui lòng xác nhận thủ công trước khi kích hoạt hỗ trợ khẩn cấp.';
       showEmergencyPrompt('face', reason);
+    }
+
+    if(telemetry) {
+      document.getElementById('telTremorVal').textContent = telemetry.tremorIndex;
+      var tStat = document.getElementById('telTremorStat');
+      if (telemetry.tremorIndex > 70) { tStat.textContent = 'HIGH'; tStat.className = 't-status alert'; }
+      else if (telemetry.tremorIndex > 40) { tStat.textContent = 'WARN'; tStat.className = 't-status warn'; }
+      else { tStat.textContent = 'OK'; tStat.className = 't-status ok'; }
+
+      document.getElementById('telResponseVal').innerHTML = telemetry.responseDelay + '<small>ms</small>';
+      var rStat = document.getElementById('telResponseStat');
+      if (telemetry.responseDelay > 2000) { rStat.textContent = 'SLOW'; rStat.className = 't-status alert'; }
+      else if (telemetry.responseDelay > 1000) { rStat.textContent = 'DELAY'; rStat.className = 't-status warn'; }
+      else { rStat.textContent = 'OK'; rStat.className = 't-status ok'; }
     }
   });
 
@@ -304,14 +353,35 @@ document.addEventListener('DOMContentLoaded', function(){
   } else if (typeof captureGPS === 'function') {
     captureGPS();
   }
+
+  // Init Digital Twin
+  {% if latest_record %}
+  setTimeout(function() {
+    if (typeof HBDigitalTwin !== 'undefined') {
+      HBDigitalTwin.init({
+        currentRisk: {{ latest_record.final_score | default(0) }},
+        age: {{ user.age | default(30) }},
+        systolic: {{ latest_record.systolic | default(120) }},
+        diastolic: {{ latest_record.diastolic | default(80) }},
+        glucose: {{ latest_record.avg_glucose_level | default(100) }},
+        bmi: {{ latest_record.bmi | default(22) }},
+        smokingStatus: "{{ latest_record.smoking_status | default('never smoked') }}",
+        heartDisease: {{ latest_record.heart_disease | default(0) }},
+        exerciseStreak: {{ user.exercise_streak | default(0) }}
+      });
+      HBDigitalTwin.renderCard('digitalTwinContainer');
+    }
+  }, 200);
+  {% endif %}
 });
 </script>
 <script src="/static/js/dashboard.js"></script>
 <link rel="preload" href="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" as="script">
 <link rel="preload" href="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" as="script">
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-<script src="/static/js/vision.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous" defer></script>
+<script src="/static/js/vision.js" defer></script>
+<script src="/static/js/digital_twin.js" defer></script>
 
 {% endblock %}
