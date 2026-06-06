@@ -126,29 +126,58 @@ var HBVision = (function () {
           color: 'rgba(139,92,246,0.8)', lineWidth: 1.5
         });
 
-        // Key landmarks: mouth corners (61 left, 291 right), forehead (10), chin (152)
-        var leftMouth = lm[61];
-        var rightMouth = lm[291];
+        // Key landmark for scale: forehead (10), chin (152)
         var faceH = Math.abs(lm[10].y - lm[152].y);
 
         // ─── Head Pose Compensation (Roll) ──────────────────────────
-        var leftEye = lm[33];
-        var rightEye = lm[263];
-        var theta = Math.atan2(leftEye.y - rightEye.y, leftEye.x - rightEye.x);
-
-        // Rotate mouth corners back by -theta around their midpoint to neutralize tilt
-        var midX = (leftMouth.x + rightMouth.x) / 2;
-        var midY = (leftMouth.y + rightMouth.y) / 2;
+        var eyeOuterLeft = lm[33];
+        var eyeOuterRight = lm[263];
+        var theta = Math.atan2(eyeOuterLeft.y - eyeOuterRight.y, eyeOuterLeft.x - eyeOuterRight.x);
         var sinNegTheta = Math.sin(-theta);
         var cosNegTheta = Math.cos(-theta);
 
-        var leftCorrectedY = (leftMouth.x - midX) * sinNegTheta + (leftMouth.y - midY) * cosNegTheta + midY;
-        var rightCorrectedY = (rightMouth.x - midX) * sinNegTheta + (rightMouth.y - midY) * cosNegTheta + midY;
+        // ─── Multi-Region Asymmetry Detection ───────────────────────
+        var regions = [
+          { name: 'mouth', leftIdx: 61, rightIdx: 291 },
+          { name: 'eye_lower', leftIdx: 145, rightIdx: 374 },
+          { name: 'eyebrow', leftIdx: 70, rightIdx: 300 },
+          { name: 'cheek', leftIdx: 50, rightIdx: 280 }
+        ];
 
-        var yDiff = Math.abs(leftCorrectedY - rightCorrectedY);
-        var score = Math.min(100, Math.round((yDiff / faceH) * 500));
+        var maxScore = 0;
+        var regionScores = [];
+
+        for (var i = 0; i < regions.length; i++) {
+          var leftPt = lm[regions[i].leftIdx];
+          var rightPt = lm[regions[i].rightIdx];
+
+          // Rotate points back by -theta around their midpoint to neutralize tilt
+          var midX = (leftPt.x + rightPt.x) / 2;
+          var midY = (leftPt.y + rightPt.y) / 2;
+
+          var leftCorrectedY = (leftPt.x - midX) * sinNegTheta + (leftPt.y - midY) * cosNegTheta + midY;
+          var rightCorrectedY = (rightPt.x - midX) * sinNegTheta + (rightPt.y - midY) * cosNegTheta + midY;
+
+          var yDiff = Math.abs(leftCorrectedY - rightCorrectedY);
+          var rScore = Math.min(100, Math.round((yDiff / faceH) * 500));
+          
+          regionScores.push({
+            name: regions[i].name,
+            score: rScore,
+            leftPt: leftPt,
+            rightPt: rightPt
+          });
+
+          if (rScore > maxScore) {
+            maxScore = rScore;
+          }
+        }
+
+        var score = maxScore;
 
         // Measure current mouth width for expression detection
+        var leftMouth = lm[61];
+        var rightMouth = lm[291];
         var mouthWidth = Math.sqrt(Math.pow(leftMouth.x - rightMouth.x, 2) + Math.pow(leftMouth.y - rightMouth.y, 2));
 
         // ─── Calibration Logic ────────────────────────────────────
@@ -190,13 +219,17 @@ var HBVision = (function () {
         if (tremorBuffer.length > TREMOR_BUFFER_SIZE) tremorBuffer.shift();
         var tremorIndex = calcTremorIndex(tremorBuffer);
 
-        // Draw mouth landmarks
-        var color = finalScore > ALERT_THRESHOLD ? '#EF4444' : '#10B981';
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(leftMouth.x * canvasEl.width, leftMouth.y * canvasEl.height, 5, 0, 2 * Math.PI);
-        ctx.arc(rightMouth.x * canvasEl.width, rightMouth.y * canvasEl.height, 5, 0, 2 * Math.PI);
-        ctx.fill();
+        // Draw landmarks for all tracked regions
+        for (var i = 0; i < regionScores.length; i++) {
+          var rs = regionScores[i];
+          var regionFinal = isCalibrating ? 0 : Math.max(0, rs.score - currentBaseline);
+          var color = regionFinal > ALERT_THRESHOLD ? '#EF4444' : '#10B981';
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(rs.leftPt.x * canvasEl.width, rs.leftPt.y * canvasEl.height, 4, 0, 2 * Math.PI);
+          ctx.arc(rs.rightPt.x * canvasEl.width, rs.rightPt.y * canvasEl.height, 4, 0, 2 * Math.PI);
+          ctx.fill();
+        }
 
         // Check sustained asymmetry
         if (finalScore > ALERT_THRESHOLD) {
