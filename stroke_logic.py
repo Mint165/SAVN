@@ -76,8 +76,8 @@ XAI_GROUP_WEIGHTS = {
 
 
 def load_artifacts(
-    model_name: str = "stroke_final_model.pkl",
-    meta_name: str = "preprocessor_meta.pkl",
+    model_name: str = "stroke_large_model.pkl",
+    meta_name: str = "preprocessor_large_meta.pkl",
 ):
     import joblib
 

@@ -43,18 +43,48 @@ var HBVision = (function () {
   var frameCounter = 0;
 
   // ─── Calibration State ──────────────────────────────────────────
-  var isCalibrating = false;
+  var calibrationState = 'idle'; // 'idle', 'neutral', 'smile'
   var calibrationFrames = 30;
   var calibrationData = [];
-  var baselineScore = 0;
+  var calibrationWidths = [];
+  
+  var neutralBaseline = 0;
+  var smileBaseline = 0;
+  var neutralMouthWidth = 0;
 
-  function startCalibration() {
-    isCalibrating = true;
-    calibrationData = [];
-    baselineScore = 0;
+  function loadFaceProfile() {
+    try {
+      var profile = JSON.parse(localStorage.getItem('SAVN_FaceProfile'));
+      if (profile) {
+        neutralBaseline = profile.neutral || 0;
+        smileBaseline = profile.smile || 0;
+        neutralMouthWidth = profile.width || 0;
+      }
+    } catch(e) {}
+  }
+
+  function saveFaceProfile() {
+    try {
+      localStorage.setItem('SAVN_FaceProfile', JSON.stringify({
+        neutral: neutralBaseline,
+        smile: smileBaseline,
+        width: neutralMouthWidth
+      }));
+    } catch(e) {}
+  }
+
+  function startCalibration(state) {
+    if (state === 'neutral' || state === 'smile') {
+      calibrationState = state;
+      calibrationData = [];
+      calibrationWidths = [];
+    } else {
+      calibrationState = 'idle';
+    }
   }
 
   function init(videoEl, canvasEl, statusCallback) {
+    loadFaceProfile();
     _statusCallback = statusCallback;
     var ctx = canvasEl.getContext('2d');
 
@@ -118,20 +148,42 @@ var HBVision = (function () {
         var yDiff = Math.abs(leftCorrectedY - rightCorrectedY);
         var score = Math.min(100, Math.round((yDiff / faceH) * 500));
 
+        // Measure current mouth width for expression detection
+        var mouthWidth = Math.sqrt(Math.pow(leftMouth.x - rightMouth.x, 2) + Math.pow(leftMouth.y - rightMouth.y, 2));
+
         // ─── Calibration Logic ────────────────────────────────────
-        if (isCalibrating) {
+        if (calibrationState === 'neutral') {
+          calibrationData.push(score);
+          calibrationWidths.push(mouthWidth);
+          if (calibrationData.length >= calibrationFrames) {
+            var sumScore = 0;
+            var sumWidth = 0;
+            for (var i = 0; i < calibrationData.length; i++) {
+              sumScore += calibrationData[i];
+              sumWidth += calibrationWidths[i];
+            }
+            neutralBaseline = Math.round(sumScore / calibrationFrames);
+            neutralMouthWidth = sumWidth / calibrationFrames;
+            calibrationState = 'idle';
+            saveFaceProfile();
+          }
+        } else if (calibrationState === 'smile') {
           calibrationData.push(score);
           if (calibrationData.length >= calibrationFrames) {
-            var sum = 0;
+            var sumScore = 0;
             for (var i = 0; i < calibrationData.length; i++) {
-              sum += calibrationData[i];
+              sumScore += calibrationData[i];
             }
-            baselineScore = Math.round(sum / calibrationFrames);
-            isCalibrating = false;
+            smileBaseline = Math.round(sumScore / calibrationFrames);
+            calibrationState = 'idle';
+            saveFaceProfile();
           }
         }
 
-        var finalScore = isCalibrating ? 0 : Math.max(0, score - baselineScore);
+        var isCalibrating = (calibrationState !== 'idle');
+        var isSmiling = neutralMouthWidth > 0 && mouthWidth > neutralMouthWidth * 1.08;
+        var currentBaseline = isSmiling ? smileBaseline : neutralBaseline;
+        var finalScore = isCalibrating ? 0 : Math.max(0, score - currentBaseline);
 
         // ─── Tremor buffer update ─────────────────────────────────
         tremorBuffer.push({ left: lm[61].y, right: lm[291].y });
@@ -171,6 +223,7 @@ var HBVision = (function () {
             responseDelay: lastResponseDelay,
             frameCount: frameCounter,
             isCalibrating: isCalibrating,
+            calibrationState: calibrationState,
             calibrationProgress: isCalibrating ? Math.round((calibrationData.length / calibrationFrames) * 100) : 100
           });
         }
@@ -182,6 +235,7 @@ var HBVision = (function () {
             responseDelay: lastResponseDelay,
             frameCount: frameCounter,
             isCalibrating: isCalibrating,
+            calibrationState: calibrationState,
             calibrationProgress: isCalibrating ? Math.round((calibrationData.length / calibrationFrames) * 100) : 100
           });
         }
@@ -217,7 +271,7 @@ var HBVision = (function () {
     canvasEl.width = canvasEl.clientWidth;
     canvasEl.height = canvasEl.clientHeight;
     camera.start();
-    startCalibration();
+    startCalibration('neutral');
   }
 
   function stop() {

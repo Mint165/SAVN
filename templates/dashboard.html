@@ -151,6 +151,50 @@
     </div>
     <!-- The chart will be rendered by JS inside here -->
     <div id="digitalTwinContainer"></div>
+
+    <!-- What-If Simulation Sliders -->
+    <div class="dt-sliders-box" style="padding: 0 1.25rem 1.25rem; border-top: 1px solid var(--border); margin-top: 1rem;">
+      <h5 style="margin: 1rem 0 0.75rem; font-size: 0.85rem; font-weight: 700; color: var(--text);" data-i18n="dt_simulate_title">Mô phỏng thay đổi chỉ số sức khỏe:</h5>
+      <div class="dt-sliders-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.5rem;">
+        
+        <div class="slider-group">
+          <div style="display:flex; justify-content:space-between; font-size:0.78rem; font-weight:600; margin-bottom:0.25rem;">
+            <span data-i18n="bp_label">Huyết áp</span>
+            <span id="valWhatIfBP" style="color:var(--primary); font-weight:700;">{{ latest_record.systolic }}/{{ latest_record.diastolic }} mmHg</span>
+          </div>
+          <input type="range" id="slideWhatIfBP" min="90" max="200" value="{{ latest_record.systolic }}" style="width:100%; accent-color:var(--primary);">
+        </div>
+
+        <div class="slider-group">
+          <div style="display:flex; justify-content:space-between; font-size:0.78rem; font-weight:600; margin-bottom:0.25rem;">
+            <span data-i18n="glucose_label">Đường huyết</span>
+            <span id="valWhatIfGlucose" style="color:var(--primary); font-weight:700;">{% if latest_record.avg_glucose_level %}{{ latest_record.avg_glucose_level | round(1) }}{% else %}100{% endif %} mg/dL</span>
+          </div>
+          <input type="range" id="slideWhatIfGlucose" min="50" max="300" value="{% if latest_record.avg_glucose_level %}{{ latest_record.avg_glucose_level | int }}{% else %}100{% endif %}" style="width:100%; accent-color:var(--primary);">
+        </div>
+
+        <div class="slider-group">
+          <div style="display:flex; justify-content:space-between; font-size:0.78rem; font-weight:600; margin-bottom:0.25rem;">
+            <span data-i18n="profile_bmi">BMI</span>
+            <span id="valWhatIfBMI" style="color:var(--primary); font-weight:700;">{{ latest_record.bmi | default(22) }}</span>
+          </div>
+          <input type="range" id="slideWhatIfBMI" min="15" max="40" step="0.5" value="{{ latest_record.bmi | default(22) }}" style="width:100%; accent-color:var(--primary);">
+        </div>
+
+        <div class="slider-group">
+          <div style="display:flex; justify-content:space-between; font-size:0.78rem; font-weight:600; margin-bottom:0.25rem;">
+            <span data-i18n="profile_smoking">Hút thuốc</span>
+            <span id="valWhatIfSmoking" style="color:var(--primary); font-weight:700;"></span>
+          </div>
+          <select id="selectWhatIfSmoking" style="width:100%; padding: 0.25rem; border-radius:0.25rem; border:1px solid var(--border); background:var(--bg-card); color:var(--text); font-size:0.8rem; font-weight:600;">
+            <option value="never smoked" {% if latest_record.smoking_status == 'never smoked' %}selected{% endif %} data-i18n="profile_smoking_never">Không hút thuốc</option>
+            <option value="formerly smoked" {% if latest_record.smoking_status == 'formerly smoked' %}selected{% endif %} data-i18n="profile_smoking_former">Đã từng hút</option>
+            <option value="smokes" {% if latest_record.smoking_status == 'smokes' or latest_record.smoking_status == 'currently smoking' %}selected{% endif %} data-i18n="profile_smoking_current">Đang hút thuốc</option>
+          </select>
+        </div>
+
+      </div>
+    </div>
   </div>
 
   {% if xai %}
@@ -289,14 +333,17 @@ function startFaceScan(){
     btnRecalibrate.style.display = 'inline-block';
     btnRecalibrate.onclick = function() {
       HBVision.resetTelemetry();
-      HBVision.startCalibration();
+      HBVision.startCalibration('neutral');
     };
   }
+
+  var lastCalibState = 'idle';
 
   HBVision.setCallback(function(score, isAlert, telemetry){
     loading.style.display = 'none';
 
     var isCalibrating = telemetry && telemetry.isCalibrating;
+    var calibState = telemetry && telemetry.calibrationState;
 
     if (isCalibrating) {
       if (calibStatus) calibStatus.style.display = 'flex';
@@ -307,13 +354,27 @@ function startFaceScan(){
       bar.style.width = '0%';
 
       var statusEl = document.getElementById('aiFaceStatus');
-      statusEl.textContent = d.ai_calibrating || 'Calibrating face...';
       statusEl.className = 'ai-status ok';
+      
+      if (calibState === 'neutral') {
+        statusEl.textContent = d.ai_calibrating_neutral || 'Bước 1/2: Giữ mặt bình thường (nhìn thẳng)...';
+      } else if (calibState === 'smile') {
+        statusEl.textContent = d.ai_calibrating_smile || 'Bước 2/2: Vui lòng cười tươi hoặc nhe răng...';
+      }
 
       document.getElementById('telTremorVal').textContent = '--';
       document.getElementById('telResponseVal').innerHTML = '--<small>ms</small>';
+      lastCalibState = calibState;
     } else {
+      // Auto transition from Step 1 (neutral) to Step 2 (smile)
+      if (lastCalibState === 'neutral') {
+        lastCalibState = 'smile';
+        HBVision.startCalibration('smile');
+        return;
+      }
+
       if (calibStatus) calibStatus.style.display = 'none';
+      lastCalibState = 'idle';
 
       document.getElementById('aiFaceScore').textContent = score + '%';
       var bar = document.getElementById('aiFaceBar');
@@ -406,7 +467,50 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // Init Digital Twin
   {% if latest_record %}
-  setTimeout(function() {
+  function initWhatIfSliders() {
+    var slideBP = document.getElementById('slideWhatIfBP');
+    var slideGlucose = document.getElementById('slideWhatIfGlucose');
+    var slideBMI = document.getElementById('slideWhatIfBMI');
+    var selectSmoking = document.getElementById('selectWhatIfSmoking');
+
+    var valBP = document.getElementById('valWhatIfBP');
+    var valGlucose = document.getElementById('valWhatIfGlucose');
+    var valBMI = document.getElementById('valWhatIfBMI');
+
+    function updateSimulation() {
+      var bpSystolic = parseInt(slideBP.value);
+      var bpDiastolic = Math.round(bpSystolic * 0.6);
+      if (valBP) valBP.textContent = bpSystolic + '/' + bpDiastolic + ' mmHg';
+      
+      var glucoseVal = parseFloat(slideGlucose.value);
+      if (valGlucose) valGlucose.textContent = glucoseVal + ' mg/dL';
+      
+      var bmiVal = parseFloat(slideBMI.value);
+      if (valBMI) valBMI.textContent = bmiVal.toFixed(1);
+
+      var smokingVal = selectSmoking ? selectSmoking.value : 'never smoked';
+
+      HBDigitalTwin.init({
+        currentRisk: {{ latest_record.final_score | default(0) }},
+        age: {{ user.age | default(30) }},
+        systolic: bpSystolic,
+        diastolic: bpDiastolic,
+        glucose: glucoseVal,
+        bmi: bmiVal,
+        smokingStatus: smokingVal,
+        heartDisease: {{ latest_record.heart_disease | default(0) }},
+        exerciseStreak: {{ user.exercise_streak | default(0) }}
+      });
+      HBDigitalTwin.renderCard('digitalTwinContainer');
+    }
+
+    if (slideBP) slideBP.addEventListener('input', updateSimulation);
+    if (slideGlucose) slideGlucose.addEventListener('input', updateSimulation);
+    if (slideBMI) slideBMI.addEventListener('input', updateSimulation);
+    if (selectSmoking) selectSmoking.addEventListener('change', updateSimulation);
+  }
+
+  function initDigitalTwinSafe() {
     if (typeof HBDigitalTwin !== 'undefined') {
       HBDigitalTwin.init({
         currentRisk: {{ latest_record.final_score | default(0) }},
@@ -420,8 +524,12 @@ document.addEventListener('DOMContentLoaded', function(){
         exerciseStreak: {{ user.exercise_streak | default(0) }}
       });
       HBDigitalTwin.renderCard('digitalTwinContainer');
+      initWhatIfSliders();
+    } else {
+      setTimeout(initDigitalTwinSafe, 50);
     }
-  }, 200);
+  }
+  initDigitalTwinSafe();
   {% endif %}
 });
 </script>

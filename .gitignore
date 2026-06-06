@@ -11,3 +11,7 @@ ENV/
 .DS_Store
 .vscode/
 .idea/
+
+# Large models and datasets
+*.pkl
+*.csv
