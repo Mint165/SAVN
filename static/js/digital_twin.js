@@ -195,8 +195,8 @@ var HBDigitalTwin = (function () {
 
     // Baseline reference line
     var baselineBottom = _config.currentRisk + '%';
-    html += '<div class="dt-baseline" style="bottom:' + baselineBottom + '">';
-    html += '  <span class="dt-baseline-label">' + _config.currentRisk + '%</span>';
+    html += '<div class="dt-chart-baseline" style="bottom:' + baselineBottom + '">';
+    html += '  <span class="dt-chart-baseline-label">' + _config.currentRisk + '%</span>';
     html += '</div>';
 
     // Bars
@@ -287,8 +287,8 @@ var HBDigitalTwin = (function () {
     css += '.dt-chart { position: relative; height: 200px; margin: 1.25rem 0; padding: 0 .5rem; }';
 
     // Baseline
-    css += '.dt-baseline { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--text-muted); opacity: .4; z-index: 1; pointer-events: none; }';
-    css += '.dt-baseline-label { position: absolute; right: 0; top: -18px; font-size: .7rem; font-weight: 700; color: var(--text-muted); }';
+    css += '.dt-chart-baseline { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--text-muted); opacity: .4; z-index: 1; pointer-events: none; }';
+    css += '.dt-chart-baseline-label { position: absolute; right: 0; top: -18px; font-size: .7rem; font-weight: 700; color: var(--text-muted); }';
 
     // Bars container
     css += '.dt-bars { display: flex; align-items: flex-end; justify-content: space-around; height: 100%; gap: .5rem; position: relative; z-index: 2; }';

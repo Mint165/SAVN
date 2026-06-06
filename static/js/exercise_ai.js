@@ -21,6 +21,23 @@ var HBExerciseAI = (function () {
   var activeSide = null;
   var leftReps = 0;
   var rightReps = 0;
+  var expectedSide = null;
+  var warningCount = 0;
+  var lastSpeakTime = 0;
+
+  function speakWarning(text) {
+    if ('speechSynthesis' in window) {
+      var now = Date.now();
+      if (now - lastSpeakTime > 3000) {
+        window.speechSynthesis.cancel();
+        var utterance = new SpeechSynthesisUtterance(text);
+        var lang = localStorage.getItem('lang') || 'vi';
+        utterance.lang = lang === 'en' ? 'en-US' : 'vi-VN';
+        window.speechSynthesis.speak(utterance);
+        lastSpeakTime = now;
+      }
+    }
+  }
 
   // Initialize MediaPipe Pose
   function init(videoEl, canvasEl, onStatusUpdate, onCompleted) {
@@ -80,6 +97,17 @@ var HBExerciseAI = (function () {
         var rightAnkle = lm[28];
         var nose = lm[0];
 
+        // Visibility check
+        if (leftShoulder.visibility < 0.6 || rightShoulder.visibility < 0.6 ||
+            leftWrist.visibility < 0.6 || rightWrist.visibility < 0.6 ||
+            leftElbow.visibility < 0.6 || rightElbow.visibility < 0.6) {
+          if (_onStatusUpdate) {
+            _onStatusUpdate({ reps: repsCount, targetReps: targetReps, feedback: "adjust_camera", completed: false });
+          }
+          ctx.restore();
+          return;
+        }
+
         var feedback = "";
         var now = Date.now();
         
@@ -109,19 +137,31 @@ var HBExerciseAI = (function () {
 
           case 2: // Đi bộ tại chỗ (Walking in Place)
             targetReps = 40; // 20 left + 20 right
-            var leftKneeUp = leftKnee.y < leftHip.y + 0.1;
-            var rightKneeUp = rightKnee.y < rightHip.y + 0.1;
+            var leftKneeUp = leftKnee.y < leftHip.y + 0.1 && leftAnkle.y < rightAnkle.y - 0.05;
+            var rightKneeUp = rightKnee.y < rightHip.y + 0.1 && rightAnkle.y < leftAnkle.y - 0.05;
             
-            if (leftKneeUp && activeSide !== 'left') {
-              leftReps++;
-              activeSide = 'left';
-              repsCount = leftReps + rightReps;
-              feedback = "knee_up_right";
-            } else if (rightKneeUp && activeSide !== 'right') {
-              rightReps++;
-              activeSide = 'right';
-              repsCount = leftReps + rightReps;
-              feedback = "knee_up_left";
+            if (leftKneeUp) {
+              if (expectedSide === null || expectedSide === 'left') {
+                leftReps++;
+                expectedSide = 'right';
+                activeSide = 'left';
+                repsCount = leftReps + rightReps;
+                feedback = "knee_up_right";
+              } else if (expectedSide === 'right' && activeSide !== 'left') {
+                feedback = "wrong_side_right";
+                speakWarning("Hãy nâng chân phải luân phiên");
+              }
+            } else if (rightKneeUp) {
+              if (expectedSide === null || expectedSide === 'right') {
+                rightReps++;
+                expectedSide = 'left';
+                activeSide = 'right';
+                repsCount = leftReps + rightReps;
+                feedback = "knee_up_left";
+              } else if (expectedSide === 'left' && activeSide !== 'right') {
+                feedback = "wrong_side_left";
+                speakWarning("Hãy nâng chân trái luân phiên");
+              }
             } else {
               feedback = "keep_walking";
             }
@@ -132,19 +172,32 @@ var HBExerciseAI = (function () {
             var headTilt = nose.x - shoulderCenterX; 
             
             if (Math.abs(headTilt) > 0.08) {
-              if (!holdStartTime) holdStartTime = now;
-              var holdTime3 = 5 - Math.floor((now - holdStartTime) / 1000);
-              
-              if (holdTime3 <= 0) {
-                var side3 = headTilt > 0 ? 'left' : 'right';
-                if (activeSide !== side3) {
-                  repsCount++;
-                  activeSide = side3;
-                  holdStartTime = null;
-                  feedback = "switch_side";
-                }
+              if (Math.abs(leftShoulder.y - rightShoulder.y) > 0.05) {
+                feedback = "keep_shoulders_straight";
+                speakWarning("Hãy giữ thẳng hai vai");
+                holdStartTime = null;
               } else {
-                feedback = "hold_time_" + holdTime3;
+                var side3 = headTilt > 0 ? 'left' : 'right';
+                if (expectedSide && expectedSide !== side3) {
+                  feedback = side3 === 'left' ? "wrong_side_right" : "wrong_side_left";
+                  speakWarning(side3 === 'left' ? "Hãy nghiêng sang phải" : "Hãy nghiêng sang trái");
+                  holdStartTime = null;
+                } else {
+                  if (!holdStartTime) holdStartTime = now;
+                  var holdTime3 = 5 - Math.floor((now - holdStartTime) / 1000);
+                  
+                  if (holdTime3 <= 0) {
+                    if (activeSide !== side3) {
+                      repsCount++;
+                      activeSide = side3;
+                      expectedSide = side3 === 'left' ? 'right' : 'left';
+                      holdStartTime = null;
+                      feedback = "switch_side";
+                    }
+                  } else {
+                    feedback = "hold_time_" + holdTime3;
+                  }
+                }
               }
             } else {
               holdStartTime = null;
@@ -153,6 +206,13 @@ var HBExerciseAI = (function () {
             break;
 
           case 4: // Tập tay và vai (Arm Raises)
+            var headOffset = Math.abs(nose.x - (leftShoulder.x + rightShoulder.x)/2);
+            if (headOffset > 0.06) {
+              feedback = "head_tilted";
+              speakWarning("Hãy giữ đầu thẳng khi nâng tay!");
+              break;
+            }
+
             var leftArmAngle = _calcAngle(leftHip, leftShoulder, leftElbow);
             var rightArmAngle = _calcAngle(rightHip, rightShoulder, rightElbow);
             
@@ -179,19 +239,26 @@ var HBExerciseAI = (function () {
           case 5: // Tập thăng bằng (Balance)
             var ankleDiff = leftAnkle.y - rightAnkle.y;
             if (Math.abs(ankleDiff) > 0.05) {
-              if (!holdStartTime) holdStartTime = now;
-              var holdTime5 = 5 - Math.floor((now - holdStartTime) / 1000);
-              
-              if (holdTime5 <= 0) {
-                var side5 = ankleDiff > 0 ? 'right' : 'left'; 
-                if (activeSide !== side5) {
-                  repsCount++;
-                  activeSide = side5;
-                  holdStartTime = null;
-                  feedback = "switch_leg";
-                }
+              var side5 = ankleDiff > 0 ? 'right' : 'left';
+              if (expectedSide && expectedSide !== side5) {
+                feedback = side5 === 'left' ? "wrong_side_right" : "wrong_side_left";
+                speakWarning(side5 === 'left' ? "Hãy nhấc chân phải" : "Hãy nhấc chân trái");
+                holdStartTime = null;
               } else {
-                feedback = "hold_time_" + holdTime5;
+                if (!holdStartTime) holdStartTime = now;
+                var holdTime5 = 5 - Math.floor((now - holdStartTime) / 1000);
+                
+                if (holdTime5 <= 0) {
+                  if (activeSide !== side5) {
+                    repsCount++;
+                    activeSide = side5;
+                    expectedSide = side5 === 'left' ? 'right' : 'left';
+                    holdStartTime = null;
+                    feedback = "switch_leg";
+                  }
+                } else {
+                  feedback = "hold_time_" + holdTime5;
+                }
               }
             } else {
               holdStartTime = null;
@@ -200,8 +267,10 @@ var HBExerciseAI = (function () {
             break;
 
           case 6: // Yoga ghế nhẹ (Chair Yoga)
-            var shoulderToHip = Math.abs(leftShoulder.y - leftHip.y);
-            if (!isArmRaised && shoulderToHip < 0.2) {
+            var spineVector = { x: (leftShoulder.x + rightShoulder.x)/2 - (leftHip.x + rightHip.x)/2, y: (leftShoulder.y + rightShoulder.y)/2 - (leftHip.y + rightHip.y)/2 };
+            var spineAngle = Math.atan2(spineVector.y, spineVector.x) * 180 / Math.PI;
+            
+            if (!isArmRaised && spineAngle > -75 && spineAngle < -45) {
               if (!holdStartTime) holdStartTime = now;
               var holdTime6 = 3 - Math.floor((now - holdStartTime) / 1000);
               if (holdTime6 <= 0) {
@@ -211,12 +280,12 @@ var HBExerciseAI = (function () {
               } else {
                 feedback = "hold_time_" + holdTime6;
               }
-            } else if (isArmRaised && shoulderToHip > 0.3) {
+            } else if (isArmRaised && spineAngle < -80) {
               repsCount++;
               isArmRaised = false;
               feedback = "bend_forward";
             } else {
-              if (shoulderToHip >= 0.2 && shoulderToHip <= 0.3) holdStartTime = null;
+              if (spineAngle > -75 && spineAngle < -45) holdStartTime = null;
               feedback = isArmRaised ? "sit_straight" : "bend_forward";
             }
             break;
@@ -314,6 +383,7 @@ var HBExerciseAI = (function () {
     isArmRaised = false;
     holdStartTime = null;
     activeSide = null;
+    expectedSide = null;
     leftReps = 0;
     rightReps = 0;
     if (currentExerciseId === 2) targetReps = 40;

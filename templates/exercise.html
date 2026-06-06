@@ -2,6 +2,44 @@
 {% block title %}Tập Luyện - HeartBits{% endblock %}
 {% block body %}
 <div class="main-content">
+<style>
+.exercise-card {
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  border: 1px solid var(--border);
+}
+.exercise-card.selected {
+  border: 2px solid var(--primary) !important;
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.18);
+  opacity: 1 !important;
+}
+.exercises-grid.has-selection .exercise-card:not(.selected) {
+  opacity: 0.55;
+}
+.exercise-completed-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: var(--success);
+  color: white;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+  z-index: 10;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes popIn {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+</style>
   <div class="page-header"><h1 data-i18n="page_exercise">Tập Luyện Hàng Ngày</h1></div>
 
   <div class="streak-display card">
@@ -19,21 +57,19 @@
 
   <div class="exercises-grid">
     {% for ex in exercises %}
-    <div class="card exercise-card">
+    <div class="card exercise-card" onclick="selectExercise({{ ex.id }}, this)" data-ex-id="{{ ex.id }}">
       <img src="{{ ex.image }}" alt="{{ ex.name }}" class="exercise-img" onerror="this.style.display='none'">
       <div data-lang="vi">
         <div class="exercise-title">{{ ex.icon }} {{ ex.name }}</div>
         <div class="exercise-duration"><i class="fa-solid fa-clock"></i> {{ ex.duration }}</div>
         <p class="exercise-desc">{{ ex.description }}</p>
         <ol class="steps-list">{% for step in ex.steps %}<li><span class="step-num">{{ loop.index }}</span> {{ step }}</li>{% endfor %}</ol>
-        <button class="btn btn-secondary-solid mt-2" onclick="openAIExercise({{ ex.id }})" style="font-size:0.9rem;padding:0.6rem 1rem;width:100%"><i class="fa-solid fa-video"></i> <span data-i18n="exercise_ai_btn">Tập bài này cùng AI</span></button>
       </div>
       <div data-lang="en" style="display:none">
         <div class="exercise-title">{{ ex.icon }} {{ ex.name_en }}</div>
         <div class="exercise-duration"><i class="fa-solid fa-clock"></i> {{ ex.duration_en }}</div>
         <p class="exercise-desc">{{ ex.description_en }}</p>
         <ol class="steps-list">{% for step in ex.steps_en %}<li><span class="step-num">{{ loop.index }}</span> {{ step }}</li>{% endfor %}</ol>
-        <button class="btn btn-secondary-solid mt-2" onclick="openAIExercise({{ ex.id }})" style="font-size:0.9rem;padding:0.6rem 1rem;width:100%"><i class="fa-solid fa-video"></i> <span data-i18n="exercise_ai_btn_en">Exercise with AI</span></button>
       </div>
     </div>
     {% endfor %}
@@ -43,9 +79,11 @@
     {% if already_done %}
     <div class="btn btn-success" style="opacity:.6;cursor:default;font-size:1.05rem"><i class="fa-solid fa-check-circle"></i> <span data-i18n="exercise_done_already">Đã tập luyện hôm nay!</span></div>
     <p class="text-muted" style="margin-top:1rem" data-i18n="exercise_comeback">Hãy quay lại vào ngày mai để giữ chuỗi 🔥</p>
-    {% else %}
     <p style="margin-bottom:1.25rem;font-size:.95rem;color:var(--text-muted)" data-i18n="exercise_done_msg">Đã hoàn thành tất cả bài tập hôm nay? Nhấn để ghi nhận!</p>
     <div style="display:flex; justify-content:center; gap:1rem; flex-wrap:wrap;">
+      <button id="btnStartAI" class="btn btn-secondary-solid" style="font-size:1.05rem;padding:1rem 2rem; display:flex; align-items:center; gap:0.5rem;" onclick="openAIExercise()">
+        <i class="fa-solid fa-video"></i> <span data-i18n="exercise_ai_btn_main">Tập bài này cùng AI</span>
+      </button>
       <button class="btn btn-primary" style="font-size:1.05rem;padding:1rem 2rem" onclick="completeExercise()"><i class="fa-solid fa-fire"></i> <span data-i18n="exercise_done_btn">Tôi Đã Tập Luyện Hôm Nay!</span></button>
     </div>
     {% endif %}
@@ -96,29 +134,94 @@
 
 <script>
 var _currentExerciseId = 4; // default to Arm exercises
+var _currentExerciseName = '';
+var currentUserId = {{ user.id | default(0) }};
+var todayDateStr = "{{ today }}";
+var storageKey = "completed_exercises_" + currentUserId + "_" + todayDateStr;
+var _exInitialized = false;
+
+function selectExercise(exId, cardEl) {
+  _currentExerciseId = exId;
+  var grid = document.querySelector('.exercises-grid');
+  if(grid) grid.classList.add('has-selection');
+  
+  document.querySelectorAll('.exercise-card').forEach(function(c) {
+    c.classList.remove('selected');
+  });
+  if(cardEl) cardEl.classList.add('selected');
+  
+  var nameEl = cardEl ? cardEl.querySelector('.exercise-title') : null;
+  if(nameEl) {
+    // Strip icon if present
+    _currentExerciseName = nameEl.textContent.trim().replace(/^[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]\s*/g, '');
+  }
+  
+  var btnStartAI = document.getElementById('btnStartAI');
+  if (btnStartAI) {
+    var lang = localStorage.getItem('lang') || 'vi';
+    var prefix = lang === 'en' ? 'Start AI: ' : 'Tập cùng AI: ';
+    var span = btnStartAI.querySelector('span');
+    if (span) {
+      span.textContent = prefix + _currentExerciseName;
+    }
+  }
+}
+
+function markCardCompleted(exId) {
+  var card = document.querySelector('.exercise-card[data-ex-id="' + exId + '"]');
+  if (card && !card.querySelector('.exercise-completed-badge')) {
+    var badge = document.createElement('div');
+    badge.className = 'exercise-completed-badge';
+    badge.innerHTML = '<i class="fa-solid fa-check"></i> <span data-i18n="ex_completed">Đã hoàn thành</span>';
+    card.appendChild(badge);
+  }
+}
 
 // Preload MediaPipe to speed up first initialization
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof HBExerciseAI !== 'undefined') {
     var videoEl = document.getElementById('exVideo');
     var canvasEl = document.getElementById('exCanvas');
-    HBExerciseAI.init(videoEl, canvasEl, null, null);
-    _exInitialized = true;
+    if(videoEl && canvasEl) {
+      HBExerciseAI.init(videoEl, canvasEl, null, null);
+      _exInitialized = true;
+    }
   }
+  
+  // Select first card by default
+  var firstCard = document.querySelector('.exercise-card');
+  if (firstCard) {
+    var exId = firstCard.getAttribute('data-ex-id');
+    if (exId) selectExercise(parseInt(exId), firstCard);
+  }
+  
+  // Load completed from localStorage
+  try {
+    var completedList = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    completedList.forEach(function(id) {
+      markCardCompleted(id);
+    });
+  } catch(e){}
 });
 
 function openAIExercise(exId) {
-  _currentExerciseId = exId || 4;
+  if(exId) {
+    _currentExerciseId = exId;
+  }
   var modal = document.getElementById('aiExerciseModal');
-  modal.style.display = 'flex';
-  modal.classList.remove('hidden');
-  startPoseScan();
+  if(modal) {
+    modal.style.display = 'flex';
+    modal.classList.remove('hidden');
+    startPoseScan();
+  }
 }
 
 function closeAIExercise() {
   var modal = document.getElementById('aiExerciseModal');
-  modal.style.display = 'none';
-  modal.classList.add('hidden');
+  if(modal) {
+    modal.style.display = 'none';
+    modal.classList.add('hidden');
+  }
   if (typeof HBExerciseAI !== 'undefined') HBExerciseAI.stop();
 }
 
@@ -163,12 +266,22 @@ function startPoseScan() {
       showToast(lang === 'en' ? 'Exercise completed with AI!' : 'Đã hoàn thành tập luyện bằng AI!');
       
       try {
-        var r = await window.secureFetch('/exercise/complete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: '{}'
-        });
-        setTimeout(function() { location.reload(); }, 2000);
+        var completedList = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        if (!completedList.includes(_currentExerciseId)) {
+          completedList.push(_currentExerciseId);
+          localStorage.setItem(storageKey, JSON.stringify(completedList));
+          markCardCompleted(_currentExerciseId);
+        }
+        
+        // Auto complete if >= 3
+        if (completedList.length >= 3) {
+          var r = await window.secureFetch('/exercise/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: '{}'
+          });
+          setTimeout(function() { location.reload(); }, 2000);
+        }
       } catch(e) {}
     }
   );

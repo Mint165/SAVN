@@ -139,14 +139,29 @@
       <div class="dt-header">
         <div class="dt-header-icon"><i class="fa-solid fa-dna"></i></div>
         <div>
-          <h3 data-i18n="dt_title">Mô Phỏng Digital Twin</h3>
+          <h3 data-i18n="dt_title">Dự Đoán Sức Khỏe</h3>
           <p data-i18n="dt_desc">Dự báo diễn tiến nguy cơ đột quỵ trong 5 năm tới</p>
         </div>
       </div>
-      <div class="dt-baseline">
-        <i class="fa-solid fa-crosshairs" style="color:var(--text-muted)"></i>
-        <span data-i18n="dt_current_baseline">Nguy cơ hiện tại:</span>
-        <span class="current-val">{{ latest_record.final_score }}%</span>
+    </div>
+    
+    <!-- Cấu trúc mới: Highlight Card -->
+    <div style="padding: 0 1.25rem;">
+      <div class="dt-risk-highlight-card" id="dtRiskCard" style="background: rgba(139,92,246,0.04); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin: 1rem 0; text-align: center; transition: all 0.3s ease;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;" id="dtPeriodLabel" data-i18n="dt_risk_period_current">Nguy cơ đột quỵ hiện tại</div>
+        <div style="font-size: 3rem; font-weight: 800; color: var(--primary); margin: 0.5rem 0;" id="dtHighlightValue">{{ latest_record.final_score }}%</div>
+        <div id="dtHighlightDeltaContainer" style="display: none; align-items: center; justify-content: center; gap: 0.25rem; font-size: 0.9rem; font-weight: 700;">
+          <span id="dtHighlightDeltaText"></span>
+        </div>
+        <div id="dtHighlightAdvice" style="font-size: 0.82rem; margin-top: 0.5rem; color: var(--text-muted);" data-i18n="dt_risk_desc_current">Dựa trên các chỉ số sức khỏe hiện tại của bạn.</div>
+        
+        <!-- Các nút tùy chọn thời gian -->
+        <div class="dt-horizon-buttons" style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.25rem; flex-wrap: wrap;">
+          <button type="button" class="btn btn-tab active" data-horizon="current" style="font-size: 0.8rem; padding: 0.4rem 1rem; border-radius: 20px; border: none; cursor: pointer;" data-i18n="dt_tab_current">Hiện tại</button>
+          <button type="button" class="btn btn-tab" data-horizon="6m" style="font-size: 0.8rem; padding: 0.4rem 1rem; border-radius: 20px; border: none; cursor: pointer; background: var(--bg-card); color: var(--text);" data-i18n="dt_tab_6m">6 Tháng</button>
+          <button type="button" class="btn btn-tab" data-horizon="1y" style="font-size: 0.8rem; padding: 0.4rem 1rem; border-radius: 20px; border: none; cursor: pointer; background: var(--bg-card); color: var(--text);" data-i18n="dt_tab_1y">1 Năm</button>
+          <button type="button" class="btn btn-tab" data-horizon="5y" style="font-size: 0.8rem; padding: 0.4rem 1rem; border-radius: 20px; border: none; cursor: pointer; background: var(--bg-card); color: var(--text);" data-i18n="dt_tab_5y">5 Năm</button>
+        </div>
       </div>
     </div>
     <!-- The chart will be rendered by JS inside here -->
@@ -477,6 +492,101 @@ document.addEventListener('DOMContentLoaded', function(){
     var valGlucose = document.getElementById('valWhatIfGlucose');
     var valBMI = document.getElementById('valWhatIfBMI');
 
+    var activeHorizon = 'current';
+
+    function getRiskColor(risk) {
+      if (risk < 30) return 'var(--success)';
+      if (risk < 60) return 'var(--warning)';
+      return 'var(--danger)';
+    }
+
+    function getRiskBgColor(risk) {
+      if (risk < 30) return 'rgba(16,185,129,0.1)';
+      if (risk < 60) return 'rgba(245,158,11,0.1)';
+      return 'rgba(239,68,68,0.1)';
+    }
+
+    function updateHighlightWidget(currentRisk) {
+      var projs = typeof HBDigitalTwin !== 'undefined' ? HBDigitalTwin.getProjections() : [];
+      var targetRisk = currentRisk;
+      var targetLabel = 'Nguy cơ đột quỵ hiện tại';
+      var delta = 0;
+      var hasDelta = false;
+      var originalRisk = {{ latest_record.final_score | default(0) }};
+
+      if (activeHorizon !== 'current' && projs.length > 0) {
+        var p = projs.find(x => x.label === activeHorizon);
+        if (p) {
+          targetRisk = p.risk;
+          delta = targetRisk - originalRisk;
+          hasDelta = true;
+          if (activeHorizon === '6m') targetLabel = 'Dự báo 6 Tháng';
+          else if (activeHorizon === '1y') targetLabel = 'Dự báo 1 Năm';
+          else if (activeHorizon === '5y') targetLabel = 'Dự báo 5 Năm';
+        }
+      } else {
+        delta = targetRisk - originalRisk;
+        hasDelta = (delta !== 0);
+      }
+
+      var c = getRiskColor(targetRisk);
+      var bg = getRiskBgColor(targetRisk);
+      
+      var dtHighlightValue = document.getElementById('dtHighlightValue');
+      if(dtHighlightValue) {
+        dtHighlightValue.textContent = targetRisk + '%';
+        dtHighlightValue.style.color = c;
+      }
+      
+      var dtPeriodLabel = document.getElementById('dtPeriodLabel');
+      if(dtPeriodLabel) {
+        dtPeriodLabel.textContent = targetLabel;
+      }
+
+      var dtRiskCard = document.getElementById('dtRiskCard');
+      if(dtRiskCard) {
+        dtRiskCard.style.borderColor = c;
+        dtRiskCard.style.background = bg;
+      }
+
+      var deltaContainer = document.getElementById('dtHighlightDeltaContainer');
+      var deltaText = document.getElementById('dtHighlightDeltaText');
+      if (deltaContainer && deltaText) {
+        if (hasDelta) {
+          deltaContainer.style.display = 'flex';
+          var sign = delta > 0 ? '+' : '';
+          deltaText.textContent = sign + delta + '% so với gốc';
+          deltaContainer.style.color = delta > 0 ? 'var(--danger)' : (delta < 0 ? 'var(--success)' : 'var(--text-muted)');
+        } else {
+          deltaContainer.style.display = 'none';
+        }
+      }
+    }
+
+    // Handle tab clicks
+    var tabs = document.querySelectorAll('.dt-horizon-buttons .btn-tab');
+    tabs.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        tabs.forEach(t => {
+          t.classList.remove('active');
+          t.style.background = 'var(--bg-card)';
+          t.style.color = 'var(--text)';
+        });
+        this.classList.add('active');
+        this.style.background = 'var(--primary)';
+        this.style.color = 'white';
+        activeHorizon = this.getAttribute('data-horizon');
+        updateSimulation(); // Recalculate with new horizon
+      });
+    });
+
+    // Initialize tab styles
+    var activeTab = document.querySelector('.dt-horizon-buttons .btn-tab.active');
+    if (activeTab) {
+      activeTab.style.background = 'var(--primary)';
+      activeTab.style.color = 'white';
+    }
+
     function updateSimulation() {
       var bpSystolic = parseInt(slideBP.value);
       var bpDiastolic = Math.round(bpSystolic * 0.6);
@@ -519,6 +629,7 @@ document.addEventListener('DOMContentLoaded', function(){
         exerciseStreak: {{ user.exercise_streak | default(0) }}
       });
       HBDigitalTwin.renderCard('digitalTwinContainer');
+      updateHighlightWidget(adjustedRisk);
     }
 
     if (slideBP) slideBP.addEventListener('input', updateSimulation);
