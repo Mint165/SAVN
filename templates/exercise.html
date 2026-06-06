@@ -26,12 +26,14 @@
         <div class="exercise-duration"><i class="fa-solid fa-clock"></i> {{ ex.duration }}</div>
         <p class="exercise-desc">{{ ex.description }}</p>
         <ol class="steps-list">{% for step in ex.steps %}<li><span class="step-num">{{ loop.index }}</span> {{ step }}</li>{% endfor %}</ol>
+        <button class="btn btn-secondary-solid mt-2" onclick="openAIExercise({{ ex.id }})" style="font-size:0.9rem;padding:0.6rem 1rem;width:100%"><i class="fa-solid fa-video"></i> <span data-i18n="exercise_ai_btn">Tập bài này cùng AI</span></button>
       </div>
       <div data-lang="en" style="display:none">
         <div class="exercise-title">{{ ex.icon }} {{ ex.name_en }}</div>
         <div class="exercise-duration"><i class="fa-solid fa-clock"></i> {{ ex.duration_en }}</div>
         <p class="exercise-desc">{{ ex.description_en }}</p>
         <ol class="steps-list">{% for step in ex.steps_en %}<li><span class="step-num">{{ loop.index }}</span> {{ step }}</li>{% endfor %}</ol>
+        <button class="btn btn-secondary-solid mt-2" onclick="openAIExercise({{ ex.id }})" style="font-size:0.9rem;padding:0.6rem 1rem;width:100%"><i class="fa-solid fa-video"></i> <span data-i18n="exercise_ai_btn_en">Exercise with AI</span></button>
       </div>
     </div>
     {% endfor %}
@@ -45,7 +47,6 @@
     <p style="margin-bottom:1.25rem;font-size:.95rem;color:var(--text-muted)" data-i18n="exercise_done_msg">Đã hoàn thành tất cả bài tập hôm nay? Nhấn để ghi nhận!</p>
     <div style="display:flex; justify-content:center; gap:1rem; flex-wrap:wrap;">
       <button class="btn btn-primary" style="font-size:1.05rem;padding:1rem 2rem" onclick="completeExercise()"><i class="fa-solid fa-fire"></i> <span data-i18n="exercise_done_btn">Tôi Đã Tập Luyện Hôm Nay!</span></button>
-      <button class="btn btn-secondary-solid" style="font-size:1.05rem;padding:1rem 2rem" onclick="openAIExercise()"><i class="fa-solid fa-video"></i> <span data-i18n="exercise_ai_btn">Tập Cùng AI Camera</span></button>
     </div>
     {% endif %}
   </div>
@@ -94,9 +95,20 @@
 <script src="/static/js/exercise_ai.js" defer></script>
 
 <script>
-var _exInitialized = false;
+var _currentExerciseId = 4; // default to Arm exercises
 
-function openAIExercise() {
+// Preload MediaPipe to speed up first initialization
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof HBExerciseAI !== 'undefined') {
+    var videoEl = document.getElementById('exVideo');
+    var canvasEl = document.getElementById('exCanvas');
+    HBExerciseAI.init(videoEl, canvasEl, null, null);
+    _exInitialized = true;
+  }
+});
+
+function openAIExercise(exId) {
+  _currentExerciseId = exId || 4;
   var modal = document.getElementById('aiExerciseModal');
   modal.style.display = 'flex';
   modal.classList.remove('hidden');
@@ -159,7 +171,7 @@ function startPoseScan() {
     HBExerciseAI.init(videoEl, canvasEl, null, null);
     _exInitialized = true;
   }
-  HBExerciseAI.start(videoEl, canvasEl);
+  HBExerciseAI.start(videoEl, canvasEl, _currentExerciseId);
 }
 
 async function completeExercise(){

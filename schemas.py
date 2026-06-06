@@ -43,7 +43,6 @@ class LoginPayload(BaseFormModel):
     age: float | None = Field(default=None, ge=1, le=120)
     gender: Literal["Male", "Female", "Other"] | None = None
     work_type: Literal["Private", "Self-employed", "Govt_job", "children", "Never_worked"] | None = None
-    ever_married: Literal["Yes", "No"] | None = None
     residence_type: Literal["Urban", "Rural"] | None = None
     smoking_status: Literal["never smoked", "formerly smoked", "smokes", "Unknown"] | None = None
     heart_disease: int = 0
@@ -67,7 +66,6 @@ class LoginPayload(BaseFormModel):
             "age": self.age,
             "gender": self.gender,
             "work_type": self.work_type,
-            "ever_married": self.ever_married,
             "residence_type": self.residence_type,
             "smoking_status": self.smoking_status,
             "bmi": self.bmi,
@@ -82,7 +80,6 @@ class ProfilePayload(BaseFormModel):
     age: float = Field(ge=1, le=120)
     gender: Literal["Male", "Female", "Other"]
     work_type: Literal["Private", "Self-employed", "Govt_job", "children", "Never_worked"]
-    ever_married: Literal["Yes", "No"]
     residence_type: Literal["Urban", "Rural"]
     smoking_status: Literal["never smoked", "formerly smoked", "smokes", "Unknown"]
     heart_disease: int = 0

@@ -490,8 +490,20 @@ document.addEventListener('DOMContentLoaded', function(){
 
       var smokingVal = selectSmoking ? selectSmoking.value : 'never smoked';
 
+      var originalSystolic = {{ latest_record.systolic | default(120) }};
+      var originalGlucose = {{ latest_record.avg_glucose_level | default(100) }};
+      var originalBmi = {{ latest_record.bmi | default(22) }};
+      var originalRisk = {{ latest_record.final_score | default(0) }};
+      
+      var diffSys = bpSystolic - originalSystolic;
+      var diffGlu = glucoseVal - originalGlucose;
+      var diffBmi = bmiVal - originalBmi;
+      
+      var adjustedRisk = originalRisk + (diffSys * 0.15) + (diffGlu * 0.08) + (diffBmi * 0.2);
+      adjustedRisk = Math.max(0, Math.min(100, Math.round(adjustedRisk)));
+
       HBDigitalTwin.init({
-        currentRisk: {{ latest_record.final_score | default(0) }},
+        currentRisk: adjustedRisk,
         age: {{ user.age | default(30) }},
         systolic: bpSystolic,
         diastolic: bpDiastolic,

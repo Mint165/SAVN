@@ -127,6 +127,11 @@ def build_feature_row(
         if feature_name not in df.columns:
             df[feature_name] = 0
 
+    if "ever_married_No" in df.columns:
+        df["ever_married_No"] = 1
+    if "ever_married_Yes" in df.columns:
+        df["ever_married_Yes"] = 0
+
     return df[list(feature_names)]
 
 
