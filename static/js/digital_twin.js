@@ -185,9 +185,9 @@ var HBDigitalTwin = (function () {
 
     // Header
     html += '<div class="dt-header">';
-    html += '  <h4 class="dt-title"><i class="fa-solid fa-flask-vial"></i> ';
-    html += '  <span data-i18n="digital_twin_title">' + _t('digital_twin_title') + '</span></h4>';
-    html += '  <p class="dt-desc" data-i18n="dt_desc">' + _t('dt_desc') + '</p>';
+    html += '  <h3 class="dt-title" style="margin-bottom:0.2rem;"><i class="fa-solid fa-flask-vial"></i> ';
+    html += '  <span data-i18n="digital_twin_title">' + _t('digital_twin_title') + '</span></h3>';
+    html += '  <p class="dt-desc" data-i18n="dt_desc" style="margin-top:0;">' + _t('dt_desc') + '</p>';
     html += '</div>';
 
     // Chart area

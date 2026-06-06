@@ -17,6 +17,10 @@ var HBExerciseAI = (function () {
   var isArmRaised = false;
   var frameCount = 0;
   var currentExerciseId = 4;
+  var holdStartTime = null;
+  var activeSide = null;
+  var leftReps = 0;
+  var rightReps = 0;
 
   // Initialize MediaPipe Pose
   function init(videoEl, canvasEl, onStatusUpdate, onCompleted) {
@@ -77,32 +81,47 @@ var HBExerciseAI = (function () {
         var nose = lm[0];
 
         var feedback = "";
+        var now = Date.now();
         
         switch (currentExerciseId) {
           case 1: // Thở sâu (Deep Breathing)
             var shoulderHeight = (leftShoulder.y + rightShoulder.y) / 2;
             if (!isArmRaised && shoulderHeight < 0.45) {
-              isArmRaised = true;
-              feedback = "inhale";
+              if (!holdStartTime) holdStartTime = now;
+              var holdTime1 = 2 - Math.floor((now - holdStartTime) / 1000);
+              if (holdTime1 <= 0) {
+                isArmRaised = true;
+                holdStartTime = null;
+                feedback = "exhale";
+              } else {
+                feedback = "hold_breath_2s";
+              }
             } else if (isArmRaised && shoulderHeight > 0.48) {
               repsCount++;
               isArmRaised = false;
-              feedback = "exhale";
+              holdStartTime = null;
+              feedback = "inhale";
             } else {
-              feedback = isArmRaised ? "hold_breath" : "breathe_normally";
+              if (shoulderHeight >= 0.45 && shoulderHeight <= 0.48) holdStartTime = null;
+              feedback = isArmRaised ? "breathe_normally" : "inhale";
             }
             break;
 
           case 2: // Đi bộ tại chỗ (Walking in Place)
-            var kneeHeight = Math.min(leftKnee.y, rightKnee.y);
-            var hipHeight = (leftHip.y + rightHip.y) / 2;
-            if (!isArmRaised && kneeHeight < hipHeight + 0.1) {
-              isArmRaised = true;
-              feedback = "knee_up";
-            } else if (isArmRaised && leftKnee.y > leftHip.y + 0.15 && rightKnee.y > rightHip.y + 0.15) {
-              repsCount++;
-              isArmRaised = false;
-              feedback = "knee_down";
+            targetReps = 40; // 20 left + 20 right
+            var leftKneeUp = leftKnee.y < leftHip.y + 0.1;
+            var rightKneeUp = rightKnee.y < rightHip.y + 0.1;
+            
+            if (leftKneeUp && activeSide !== 'left') {
+              leftReps++;
+              activeSide = 'left';
+              repsCount = leftReps + rightReps;
+              feedback = "knee_up_right";
+            } else if (rightKneeUp && activeSide !== 'right') {
+              rightReps++;
+              activeSide = 'right';
+              repsCount = leftReps + rightReps;
+              feedback = "knee_up_left";
             } else {
               feedback = "keep_walking";
             }
@@ -110,15 +129,25 @@ var HBExerciseAI = (function () {
 
           case 3: // Giãn cơ cổ (Neck Stretching)
             var shoulderCenterX = (leftShoulder.x + rightShoulder.x) / 2;
-            var headTilt = Math.abs(nose.x - shoulderCenterX);
-            if (!isArmRaised && headTilt > 0.08) {
-              isArmRaised = true;
-              feedback = "hold_stretch";
-            } else if (isArmRaised && headTilt < 0.04) {
-              repsCount++;
-              isArmRaised = false;
-              feedback = "switch_side";
+            var headTilt = nose.x - shoulderCenterX; 
+            
+            if (Math.abs(headTilt) > 0.08) {
+              if (!holdStartTime) holdStartTime = now;
+              var holdTime3 = 5 - Math.floor((now - holdStartTime) / 1000);
+              
+              if (holdTime3 <= 0) {
+                var side3 = headTilt > 0 ? 'left' : 'right';
+                if (activeSide !== side3) {
+                  repsCount++;
+                  activeSide = side3;
+                  holdStartTime = null;
+                  feedback = "switch_side";
+                }
+              } else {
+                feedback = "hold_time_" + holdTime3;
+              }
             } else {
+              holdStartTime = null;
               feedback = "tilt_head";
             }
             break;
@@ -126,32 +155,46 @@ var HBExerciseAI = (function () {
           case 4: // Tập tay và vai (Arm Raises)
             var leftArmAngle = _calcAngle(leftHip, leftShoulder, leftElbow);
             var rightArmAngle = _calcAngle(rightHip, rightShoulder, rightElbow);
-            var shoulderSymmetry = Math.abs(leftShoulder.y - rightShoulder.y);
             
-            if (leftArmAngle > 140 && rightArmAngle > 140) {
-              feedback = (shoulderSymmetry > 0.08) ? "keep_shoulders_level" : "perfect_hold";
-              if (!isArmRaised) isArmRaised = true;
+            var isForward = (leftWrist.z < leftShoulder.z - 0.2) && (rightWrist.z < rightShoulder.z - 0.2);
+            var isUpward = (leftWrist.y < leftShoulder.y - 0.2) && (rightWrist.y < rightShoulder.y - 0.2);
+
+            if (isForward) {
+               feedback = "perfect_forward";
+               if (!isArmRaised) isArmRaised = true;
+            } else if (isUpward) {
+               feedback = "perfect_upward";
+               if (!isArmRaised) isArmRaised = true;
             } else if (leftArmAngle < 60 && rightArmAngle < 60) {
-              feedback = "raise_both_arms";
-              if (isArmRaised) {
-                repsCount++;
-                isArmRaised = false;
-              }
+               feedback = "raise_arms_forward_or_up";
+               if (isArmRaised) {
+                 repsCount++;
+                 isArmRaised = false;
+               }
             } else {
-              feedback = "raise_arms_higher";
+               feedback = "keep_arms_straight";
             }
             break;
 
           case 5: // Tập thăng bằng (Balance)
-            var ankleDiff = Math.abs(leftAnkle.y - rightAnkle.y);
-            if (!isArmRaised && ankleDiff > 0.05) {
-              isArmRaised = true;
-              feedback = "hold_balance";
-            } else if (isArmRaised && ankleDiff < 0.02) {
-              repsCount++;
-              isArmRaised = false;
-              feedback = "switch_leg";
+            var ankleDiff = leftAnkle.y - rightAnkle.y;
+            if (Math.abs(ankleDiff) > 0.05) {
+              if (!holdStartTime) holdStartTime = now;
+              var holdTime5 = 5 - Math.floor((now - holdStartTime) / 1000);
+              
+              if (holdTime5 <= 0) {
+                var side5 = ankleDiff > 0 ? 'right' : 'left'; 
+                if (activeSide !== side5) {
+                  repsCount++;
+                  activeSide = side5;
+                  holdStartTime = null;
+                  feedback = "switch_leg";
+                }
+              } else {
+                feedback = "hold_time_" + holdTime5;
+              }
             } else {
+              holdStartTime = null;
               feedback = "lift_one_leg";
             }
             break;
@@ -159,14 +202,22 @@ var HBExerciseAI = (function () {
           case 6: // Yoga ghế nhẹ (Chair Yoga)
             var shoulderToHip = Math.abs(leftShoulder.y - leftHip.y);
             if (!isArmRaised && shoulderToHip < 0.2) {
-              isArmRaised = true;
-              feedback = "hold_bend";
+              if (!holdStartTime) holdStartTime = now;
+              var holdTime6 = 3 - Math.floor((now - holdStartTime) / 1000);
+              if (holdTime6 <= 0) {
+                isArmRaised = true;
+                holdStartTime = null;
+                feedback = "sit_straight";
+              } else {
+                feedback = "hold_time_" + holdTime6;
+              }
             } else if (isArmRaised && shoulderToHip > 0.3) {
               repsCount++;
               isArmRaised = false;
-              feedback = "sit_straight";
-            } else {
               feedback = "bend_forward";
+            } else {
+              if (shoulderToHip >= 0.2 && shoulderToHip <= 0.3) holdStartTime = null;
+              feedback = isArmRaised ? "sit_straight" : "bend_forward";
             }
             break;
             
@@ -177,6 +228,7 @@ var HBExerciseAI = (function () {
         if (_onStatusUpdate) {
           _onStatusUpdate({
             reps: repsCount,
+            targetReps: targetReps,
             feedback: feedback,
             completed: repsCount >= targetReps
           });
@@ -260,6 +312,13 @@ var HBExerciseAI = (function () {
     running = true;
     repsCount = 0;
     isArmRaised = false;
+    holdStartTime = null;
+    activeSide = null;
+    leftReps = 0;
+    rightReps = 0;
+    if (currentExerciseId === 2) targetReps = 40;
+    else targetReps = 10;
+    
     canvasEl.width = canvasEl.clientWidth;
     canvasEl.height = canvasEl.clientHeight;
     camera.start();

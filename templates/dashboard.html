@@ -499,7 +499,12 @@ document.addEventListener('DOMContentLoaded', function(){
       var diffGlu = glucoseVal - originalGlucose;
       var diffBmi = bmiVal - originalBmi;
       
-      var adjustedRisk = originalRisk + (diffSys * 0.15) + (diffGlu * 0.08) + (diffBmi * 0.2);
+      // Make the sensitivity larger so users see the UI change (e.g., diffSys affects 0.35%)
+      var adjustedRisk = originalRisk + (diffSys * 0.35) + (diffGlu * 0.2) + (diffBmi * 0.8);
+      // Ensure risk is at least 1% if they have risk factors, but cap at 100%
+      if (adjustedRisk < 1 && (bpSystolic > 120 || glucoseVal > 100 || bmiVal > 25)) {
+        adjustedRisk = 1 + (bpSystolic > 130 ? 2 : 0);
+      }
       adjustedRisk = Math.max(0, Math.min(100, Math.round(adjustedRisk)));
 
       HBDigitalTwin.init({

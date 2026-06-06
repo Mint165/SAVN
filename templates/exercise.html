@@ -143,12 +143,18 @@ function startPoseScan() {
     canvasEl, 
     function(status) {
       loading.style.display = 'none';
-      repsTxt.textContent = status.reps + ' / 10';
-      progress.style.width = (status.reps * 10) + '%';
+      var tgt = status.targetReps || 10;
+      repsTxt.textContent = status.reps + ' / ' + tgt;
+      progress.style.width = (status.reps * 100 / tgt) + '%';
       
       if (status.feedback) {
         var key = 'ex_fb_' + status.feedback;
         var feedbackTxt = d[key] || status.feedback;
+        if (status.feedback.startsWith('hold_time_')) {
+          var sec = status.feedback.split('_')[2];
+          var holdKey = d['ex_fb_hold_time'] || "Giữ thêm {s} giây...";
+          feedbackTxt = holdKey.replace('{s}', sec);
+        }
         feedbackEl.textContent = feedbackTxt;
       }
     },
