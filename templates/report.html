@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Báo Cáo — HeartBits{% endblock %}
+{% block title %}Báo Cáo — NovaMed{% endblock %}
 {% block head %}<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>{% endblock %}
 {% block body %}
 <div class="main-content">
@@ -25,7 +25,7 @@
   </div>
 
   {% if xai %}
-  <div class="xai-container" id="xaiAccordion" style="margin-bottom:2rem">
+  <div class="xai-container" id="xaiAccordion" style="margin-bottom:2rem; display: none;">
     <div class="xai-header" onclick="toggleXAI()">
       <h4><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="xai_title">Phân tích chi tiết đóng góp từng yếu tố (XAI)</span></h4>
       <i class="fa-solid fa-chevron-down xai-chevron"></i>

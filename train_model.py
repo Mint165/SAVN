@@ -1,5 +1,5 @@
 """
-Training pipeline for HeartBits stroke diagnosis.
+Training pipeline for NovaMed stroke diagnosis.
 Uses a balanced RandomForest model and stores feature importances for XAI.
 """
 import os
@@ -52,7 +52,7 @@ def build_feature_stats(df: pd.DataFrame):
 
 def train():
     print("=" * 50)
-    print("  HEARTBITS - TRAINING PIPELINE (RANDOM FOREST)")
+    print("  NOVAMED - TRAINING PIPELINE (RANDOM FOREST)")
     print("=" * 50)
 
     df = load_data()

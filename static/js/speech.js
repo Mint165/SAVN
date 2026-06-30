@@ -1,4 +1,4 @@
-// ─── HeartBits Speech AI: Voice Slur Detection ─────────────────
+// ─── NovaMed Speech AI: Voice Slur Detection ─────────────────
 // Uses Web Speech API to detect speech difficulties.
 // User repeats a reference sentence; AI compares accuracy.
 

@@ -7,7 +7,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
 
-DEFAULT_SQLITE_URL = "sqlite:///./heartbits.db"
+DEFAULT_SQLITE_URL = "sqlite:///./novamed.db"
 
 
 def normalize_database_url(raw_url: str | None) -> str:

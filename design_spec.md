@@ -1,7 +1,7 @@
-# Tài Liệu Ý Tưởng & Phong Cách Dự Án HeartBits
+# Tài Liệu Ý Tưởng & Phong Cách Dự Án NovaMed
 
 ## 1. Tổng Quan Ý Tưởng (Project Overview)
-- **Tên dự án**: HeartBits Dashboard
+- **Tên dự án**: NovaMed Dashboard
 - **Mục tiêu**: Xây dựng một ứng dụng web chuyên nghiệp (Dashboard) hỗ trợ người dùng theo dõi sức khỏe tim mạch và dự đoán sớm nguy cơ đột quỵ dựa trên các chỉ số y tế và bộ quy tắc triệu chứng FAST.
 - **Đối tượng sử dụng**: Người dùng cá nhân cần theo dõi sức khỏe hàng ngày, bác sĩ hoặc người nhà bệnh nhân.
 

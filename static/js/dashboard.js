@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-  console.log("HeartBits Dashboard JS: Initializing...");
+  console.log("NovaMed Dashboard JS: Initializing...");
 
   // ─── SAFETY CHECKS ─────────────────────────────────────
   if (typeof Chart === 'undefined') {
