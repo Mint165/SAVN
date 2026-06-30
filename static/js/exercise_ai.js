@@ -1,4 +1,4 @@
-// ─── NovaMed AI Exercise Trainer: Pose Estimation ─────────────────
+// ─── HeartBits AI Exercise Trainer: Pose Estimation ─────────────────
 // Uses MediaPipe Pose to analyze senior rehabilitation exercises.
 // Tracks arm angles and guides the user through correct movements.
 

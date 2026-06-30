@@ -1,4 +1,4 @@
-// ─── NovaMed Digital Twin: Future Risk Simulation Engine ──────
+// ─── HeartBits Digital Twin: Future Risk Simulation Engine ──────
 // Simulates future stroke risk based on current health data.
 // Renders an animated bar chart with staggered transitions.
 

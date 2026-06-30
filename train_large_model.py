@@ -1,7 +1,7 @@
 """
 train_large_model.py - Large-scale AI Training Pipeline (300,000+ samples)
 Uses a massive CDC BRFSS statistical generator / actual dataset
-to train a high-fidelity Random Forest model for NovaMed stroke prediction.
+to train a high-fidelity Random Forest model for HeartBits stroke prediction.
 """
 import os
 import numpy as np
@@ -110,7 +110,7 @@ def build_feature_stats(df: pd.DataFrame):
 
 def train_large_model():
     print("=" * 50)
-    print("  NOVAMED - MASSIVE AI TRAINING PIPELINE")
+    print("  HEARTBITS - MASSIVE AI TRAINING PIPELINE")
     print("  Dataset size: 300,000+ samples (CDC BRFSS Model)")
     print("=" * 50)
     

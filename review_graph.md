@@ -1,7 +1,7 @@
 # Review Graph
 
 Last updated: 2026-05-08
-Project: NovaMed Dashboard
+Project: HeartBits Dashboard
 Status: review complete, skill installation skipped by user request
 
 ## System Graph

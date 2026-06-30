@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Hồ Sơ — NovaMed{% endblock %}
+{% block title %}Hồ Sơ — HeartBits{% endblock %}
 {% block body %}
 <div class="main-content">
   <div class="page-header"><h1 data-i18n="page_profile">Hồ Sơ Cá Nhân</h1></div>
@@ -17,8 +17,8 @@
         <div class="profile-avatar-big">{{ user.username[0].upper() }}</div>
         <div class="profile-username">{{ user.username }}</div>
         <div style="margin-top:1.25rem">
-          <div class="streak-badge" style="margin-bottom:1rem; display: none;"><span class="flame">🔥</span> {{ user.exercise_streak or 0 }} <span data-i18n="unit_days">ngày</span></div>
-          <p class="text-muted" style="font-size:.82rem; display: none;" data-i18n="streak_label">Chuỗi tập luyện liên tiếp</p>
+          <div class="streak-badge" style="margin-bottom:1rem"><span class="flame">🔥</span> {{ user.exercise_streak or 0 }} <span data-i18n="unit_days">ngày</span></div>
+          <p class="text-muted" style="font-size:.82rem" data-i18n="streak_label">Chuỗi tập luyện liên tiếp</p>
         </div>
       </div>
       <div class="card" style="padding:1.25rem">

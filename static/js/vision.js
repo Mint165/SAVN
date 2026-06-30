@@ -1,4 +1,4 @@
-// ─── NovaMed AI Vision: Face Drooping Detection ───────────────
+// ─── HeartBits AI Vision: Face Drooping Detection ───────────────
 // Uses MediaPipe Face Mesh to measure facial asymmetry in real-time.
 // Sustained asymmetry only raises a manual confirmation prompt in the UI.
 
@@ -96,7 +96,7 @@ var HBVision = (function () {
 
     faceMesh.setOptions({
       maxNumFaces: 1,
-      refineLandmarks: false,
+      refineLandmarks: true,
       minDetectionConfidence: 0.5,
       minTrackingConfidence: 0.5
     });

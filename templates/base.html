@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-  <title>{% block title %}NovaMed{% endblock %}</title>
+  <title>{% block title %}HeartBits{% endblock %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/static/css/style.css?v=1.0.2">
@@ -23,17 +23,17 @@
   {% if user is defined and user %}
   <!-- GLOBAL TOP NAV (PC & Mobile) -->
   <nav class="top-nav">
-    <a href="/" class="nav-brand"><i class="fa-solid fa-heart-pulse heartbeat-icon"></i> NovaMed</a>
+    <a href="/" class="nav-brand"><i class="fa-solid fa-heart-pulse heartbeat-icon"></i> HeartBits</a>
 
     <ul class="nav-menu desktop-only">
       <li><a href="/"><i class="fa-solid fa-chart-line"></i> <span data-i18n="nav_dash">Tổng quan</span></a></li>
       <li><a href="/form"><i class="fa-solid fa-notes-medical"></i> <span data-i18n="nav_entry">Nhập dữ liệu</span></a>
       </li>
-      <!-- <li><a href="/exercise"><i class="fa-solid fa-dumbbell"></i> <span data-i18n="nav_ex">Tập luyện</span></a></li> -->
+      <li><a href="/exercise"><i class="fa-solid fa-dumbbell"></i> <span data-i18n="nav_ex">Tập luyện</span></a></li>
       <li><a href="/report"><i class="fa-solid fa-file-medical"></i> <span data-i18n="nav_report">Báo cáo</span></a>
       </li>
-      <!-- <li><a href="/schedule"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav_schedule">Lịch</span></a>
-      </li> -->
+      <li><a href="/schedule"><i class="fa-solid fa-calendar-days"></i> <span data-i18n="nav_schedule">Lịch</span></a>
+      </li>
       <li><a href="/profile"><i class="fa-solid fa-id-card"></i> <span data-i18n="nav_profile">Hồ sơ</span></a></li>
     </ul>
 
@@ -64,12 +64,12 @@
               data-i18n="nav_dash">Tổng quan</span></a></li>
         <li><a href="/form" onclick="toggleMobileMenu()"><i class="fa-solid fa-notes-medical"></i> <span
               data-i18n="nav_entry">Nhập dữ liệu</span></a></li>
-        <!-- <li><a href="/exercise" onclick="toggleMobileMenu()"><i class="fa-solid fa-dumbbell"></i> <span
-              data-i18n="nav_ex">Tập luyện</span></a></li> -->
+        <li><a href="/exercise" onclick="toggleMobileMenu()"><i class="fa-solid fa-dumbbell"></i> <span
+              data-i18n="nav_ex">Tập luyện</span></a></li>
         <li><a href="/report" onclick="toggleMobileMenu()"><i class="fa-solid fa-file-medical"></i> <span
               data-i18n="nav_report">Báo cáo</span></a></li>
-        <!-- <li><a href="/schedule" onclick="toggleMobileMenu()"><i class="fa-solid fa-calendar-days"></i> <span
-              data-i18n="nav_schedule">Lịch</span></a></li> -->
+        <li><a href="/schedule" onclick="toggleMobileMenu()"><i class="fa-solid fa-calendar-days"></i> <span
+              data-i18n="nav_schedule">Lịch</span></a></li>
         <li><a href="/profile" onclick="toggleMobileMenu()"><i class="fa-solid fa-id-card"></i> <span
               data-i18n="nav_profile">Hồ sơ</span></a></li>
         <li class="logout-item">

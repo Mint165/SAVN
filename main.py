@@ -1,13 +1,10 @@
-import asyncio
 import datetime
 import json
-import math
 import os
 import secrets
-import struct
-from typing import Type, Dict, Set
+from typing import Type
 
-from fastapi import Depends, FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -106,7 +103,7 @@ async def catch_exceptions_middleware(request: Request, call_next):
 
         return HTMLResponse(
             content=(
-                "<html><body><h1>System Error (NovaMed)</h1>"
+                "<html><body><h1>System Error (HeartBits)</h1>"
                 "<p>Please report this issue to support:</p>"
                 f"<pre>{exc}</pre></body></html>"
             ),
@@ -1205,92 +1202,3 @@ async def trigger_golden_hour_api(request: Request, db: Session = Depends(get_db
     except Exception as exc:
         print(f"ERROR in trigger_golden_hour_api: {exc}")
         return JSONResponse({"error": str(exc)}, status_code=500)
-
-# ── Hardware / Wearable WebSocket Integration ──────────────────────────────────
-_HW_FMT   = "<Iffff f"                       # little-endian: uint32 + 5× float32
-_HW_SIZE  = struct.calcsize(_HW_FMT)         # = 24 byte
-_HW_BATCH = 10
-_HW_FRAME = _HW_SIZE * _HW_BATCH             # = 240 byte
-
-hw_devices: Dict[str, WebSocket] = {}
-hw_browsers: Set[WebSocket] = set()
-
-def _parse_hw_frame(data: bytes) -> list[dict]:
-    if len(data) != _HW_FRAME:
-        return []
-
-    samples = []
-    for i in range(_HW_BATCH):
-        ts, pc, pr, ax, ay, az = struct.unpack(_HW_FMT, data[i*_HW_SIZE : (i+1)*_HW_SIZE])
-        samples.append({
-            "timestamp_ms": ts,
-            "ppg_clean":    round(pc, 6),
-            "ppg_raw":      round(pr, 6),
-            "ax": round(ax, 4), "ay": round(ay, 4), "az": round(az, 4),
-            "accel_mag":    round(math.sqrt(ax**2 + ay**2 + az**2), 4),
-        })
-    return samples
-
-async def _safe_ws_send(ws: WebSocket, msg: str) -> bool:
-    try:
-        await ws.send_text(msg)
-        return True
-    except Exception:
-        return False
-
-async def _broadcast_hw_data(payload: dict):
-    if not hw_browsers:
-        return
-    msg = json.dumps(payload)
-    dead = {ws for ws in hw_browsers if not await _safe_ws_send(ws, msg)}
-    hw_browsers.difference_update(dead)
-
-@app.websocket("/ws/wearable")
-async def wearable_ep(ws: WebSocket):
-    await ws.accept()
-    device_id = "unknown"
-    try:
-        device_id = (await asyncio.wait_for(ws.receive_text(), timeout=5.0)).strip()
-        hw_devices[device_id] = ws
-        print(f"[+] Hardware connected: '{device_id}'")
-
-        while True:
-            data = await ws.receive_bytes()
-            samples = _parse_hw_frame(data)
-            if not samples:
-                continue
-
-            batch = {"device_id": device_id, "samples": samples}
-            await _broadcast_hw_data(batch)
-
-    except asyncio.TimeoutError:
-        print(f"[{device_id}] Timeout handshake")
-    except WebSocketDisconnect:
-        print(f"[-] Hardware disconnected: '{device_id}'")
-    except Exception as e:
-        print(f"[{device_id}] WS Error: {e!r}")
-    finally:
-        hw_devices.pop(device_id, None)
-        try: await ws.close()
-        except Exception: pass
-
-@app.websocket("/ws/monitor")
-async def monitor_ep(ws: WebSocket):
-    await ws.accept()
-    hw_browsers.add(ws)
-    print(f"[+] Browser connected to Live Monitor (total: {len(hw_browsers)})")
-    try:
-        while True:
-            await asyncio.sleep(30)  # Keep-alive
-    except WebSocketDisconnect:
-        pass
-    finally:
-        hw_browsers.discard(ws)
-        print(f"[-] Browser disconnected from Live Monitor (total: {len(hw_browsers)})")
-
-@app.get("/twin", response_class=HTMLResponse)
-async def digital_twin_get(request: Request, db: Session = Depends(get_db)):
-    user = get_current_user(request, db)
-    if not user:
-        return RedirectResponse(url="/login", status_code=302)
-    return templates.TemplateResponse(request=request, name="twin.html", context={"user": user})

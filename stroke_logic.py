@@ -1,5 +1,5 @@
 """
-stroke_logic.py - Enhanced risk and XAI logic for NovaMed.
+stroke_logic.py - Enhanced risk and XAI logic for HeartBits.
 # Build Heartbeat: 2026-05-08
 FAST scale: 0=None, 1=Mild, 2=Clear, 3=Severe
 """
